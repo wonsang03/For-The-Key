@@ -5,50 +5,54 @@ import game.Constants;
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Font;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.Map;
 
 /**
  * 맵 테스트용 패널
- * 생성된 맵 구조를 화면에 표시
  */
-public class MapTestPanel extends JPanel implements Runnable {
+public class MapTestPanel extends JPanel implements Runnable, KeyListener {
 
-    // 맵 시스템
     private TileManager tileManager;
-    private MapManager mapManager;
+    private RoomData currentRoom;
 
-    // 게임 루프
     private Thread gameThread;
     private final int FPS = 60;
 
     public MapTestPanel() {
-        // 패널 설정
         this.setPreferredSize(new Dimension(Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT));
         this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
         this.setFocusable(true);
+        this.addKeyListener(this);
 
-        // 맵 초기화
+        // 초기화
         tileManager = new TileManager();
-        mapManager = MapManager.createTestMap(); // 3개 방 생성
 
-        // 콘솔에 맵 정보 출력
-        System.out.println("\n========== 맵 생성 확인 ==========");
-        for (int i = 0; i < 3; i++) {
-            Room room = mapManager.changeRoom(i) ? mapManager.getCurrentRoom() : null;
-            if (room != null) {
-                room.printMap();
-            }
-        }
-        mapManager.changeRoom(0); // 시작 방으로 돌아가기
-        System.out.println("=================================\n");
+        // 모든 방 로드
+        MapLoader.loadAllRooms();
+
+        // 시작 방 (Room 0)
+        currentRoom = MapLoader.getRoom(0);
+
+        // 콘솔에 맵 출력
+        printCurrentRoom();
     }
 
-    /**
-     * 게임 루프 시작
-     */
+    private void printCurrentRoom() {
+        System.out.println("\n========== Room " + currentRoom.getRoomId() + " ==========");
+        MapLoader.printMap(currentRoom.getMap());
+        System.out.println("연결된 방:");
+        for (Map.Entry<String, Integer> entry : currentRoom.getConnections().entrySet()) {
+            System.out.println("  " + entry.getKey() + " -> Room " + entry.getValue());
+        }
+        System.out.println("================================\n");
+    }
+
     public void startGameThread() {
         gameThread = new Thread(this);
         gameThread.start();
@@ -73,25 +77,65 @@ public class MapTestPanel extends JPanel implements Runnable {
         }
     }
 
-    /**
-     * 화면 그리기
-     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         Graphics2D g2 = (Graphics2D) g;
 
         // 맵 렌더링
-        Room currentRoom = mapManager.getCurrentRoom();
-        tileManager.render(g2, currentRoom);
+        tileManager.render(g2, currentRoom.getMap());
 
-        // 디버그 정보 표시
+        // 현재 방 ID 표시
         g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Arial", Font.PLAIN, 16));
-        g2.drawString("Room: " + mapManager.getCurrentRoomId() + " (" + currentRoom.getType() + ")", 10, 20);
-        g2.drawString("Size: " + currentRoom.getWidth() + "x" + currentRoom.getHeight(), 10, 40);
+        g2.setFont(new Font("Arial", Font.BOLD, 18));
+        g2.drawString("Room " + currentRoom.getRoomId(), 10, 30);
 
         g2.dispose();
     }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int key = e.getKeyCode();
+        String direction = null;
+
+        switch(key) {
+            case KeyEvent.VK_UP:
+                direction = "NORTH";
+                break;
+            case KeyEvent.VK_DOWN:
+                direction = "SOUTH";
+                break;
+            case KeyEvent.VK_LEFT:
+                direction = "WEST";
+                break;
+            case KeyEvent.VK_RIGHT:
+                direction = "EAST";
+                break;
+            case KeyEvent.VK_Q:
+                System.out.println("테스트 종료");
+                System.exit(0);
+                break;
+        }
+
+        // 해당 방향에 연결된 방이 있으면 이동
+        if (direction != null && currentRoom.hasConnection(direction)) {
+            Integer targetRoomId = currentRoom.getConnectedRoom(direction);
+            if (targetRoomId != null) {
+                RoomData nextRoom = MapLoader.getRoom(targetRoomId);
+                if (nextRoom != null) {
+                    currentRoom = nextRoom;
+                    System.out.println("→ " + direction + " 방향으로 Room " + targetRoomId + "로 이동");
+                    printCurrentRoom();
+                }
+            }
+        } else if (direction != null) {
+            System.out.println("✗ " + direction + " 방향에는 연결된 방이 없습니다.");
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {}
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
 }
