@@ -1,4 +1,4 @@
-package game;
+package main;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -15,13 +15,14 @@ import java.util.ArrayList;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import common.Constants;
 import enemy.Enemy;
 import enemy.EnemyType;
 
 public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMotionListener, MouseListener { 
 
     Thread gameThread;
-    final int FPS = 60;
+    final int FPS = Constants.FPS;
 
     // 플레이어 관련
     private Player player;

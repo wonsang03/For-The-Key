@@ -1,4 +1,4 @@
-package game;
+package main;
 
 public enum WeaponType {
     PISTOL("Pistol", 10, 0.4, 600),

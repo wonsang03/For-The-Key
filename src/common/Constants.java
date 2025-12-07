@@ -1,6 +1,4 @@
-// game/Constants.java (수정)
-
-package game;
+package common; // 모든 파일이 이 패키지 이름을 씁니다.
 
 public class Constants {
     // === 윈도우 설정 ===
@@ -17,10 +15,13 @@ public class Constants {
     public static final int WINDOW_WIDTH     = TILE_SIZE * MAX_SCREEN_COL;
     public static final int WINDOW_HEIGHT    = TILE_SIZE * MAX_SCREEN_ROW;
     
-    // === 세계 지도 설정 (새로 추가) ===
+    // === 세계 지도 설정 ===
     public static final int MAX_WORLD_COL    = 50; 
     public static final int MAX_WORLD_ROW    = 50; 
     
     public static final int WORLD_WIDTH      = TILE_SIZE * MAX_WORLD_COL; 
     public static final int WORLD_HEIGHT     = TILE_SIZE * MAX_WORLD_ROW;
+    
+    // 게임 속도
+    public static final int FPS              = 60;
 }
