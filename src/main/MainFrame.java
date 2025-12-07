@@ -1,16 +1,19 @@
-package game;
+package main;
 
 import javax.swing.JFrame;
+import common.Constants;
 
 public class MainFrame extends JFrame {
 
-    public MainFrame() {
+    private static final long serialVersionUID = 1L;
+
+	public MainFrame() {
         // 1. 닫기 버튼 설정
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setResizable(false);
         this.setTitle(Constants.GAME_TITLE);
         
-        // 2. GamePanel 생성 및 추가 (같은 폴더니까 import 안 해도 됨)
+        // 2. GamePanel 생성 및 추가
         GamePanel gamePanel = new GamePanel();
         this.add(gamePanel);
         
@@ -20,5 +23,8 @@ public class MainFrame extends JFrame {
         // 4. 화면 중앙 배치
         this.setLocationRelativeTo(null);
         this.setVisible(true);
+        
+        // 5. 게임 엔진 시작
+        gamePanel.startGameThread();
     }
 }
