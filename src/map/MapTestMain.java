@@ -1,6 +1,6 @@
 package map;
 
-import game.Constants;
+import common.Constants;
 
 import javax.swing.JFrame;
 

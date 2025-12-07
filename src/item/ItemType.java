@@ -1,4 +1,4 @@
-package main;
+package item;
 
 import java.awt.Color;
 
@@ -52,3 +52,4 @@ public enum ItemType {
         public Color getColor() { return color; }
     }
 }
+

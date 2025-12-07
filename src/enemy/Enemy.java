@@ -18,7 +18,7 @@ public class Enemy {
     private double speed;
 
     private int attackRange;
-    private int moveRange; // ★ 이제 Enemy.java에서 직접 설정됩니다.
+    private int moveRange; 
 
     public double x, y; // 월드 좌표
     public int hitWidth;  // 히트박스(충돌) 너비
@@ -28,8 +28,6 @@ public class Enemy {
     public int drawWidth;
     public int drawHeight;
     
-    private final int SCALE = 2; 
-
     public boolean alive = true;
     
     public final int IDLE = 0;   
@@ -371,9 +369,7 @@ public class Enemy {
                 
                 if (sprites == null) sprites = new BufferedImage[3][];
                 
-                // ★★★ [ICE_GOLEM 스프라이트 설정] - for 문으로 프레임 설정 ★★★
-                
-                sprites[MOVE] = new BufferedImage[10]; // 프레임 개수 설정
+                sprites[MOVE] = new BufferedImage[10];
                 for(int i = 0; i < 6; i++) {
                     sprites[MOVE][i] = sheet.getSubimage(10 + (i * 104), 220, 90, 120);
                 }
@@ -381,7 +377,7 @@ public class Enemy {
                     sprites[MOVE][6 + i] = sheet.getSubimage(10 + (i * 104), 325, 88, 120);
                 }
                 
-                sprites[ATTACK] = new BufferedImage[7]; // 프레임 개수 설정 (0이면 사용 안 함)
+                sprites[ATTACK] = new BufferedImage[7];
                 for(int i = 0; i < 6; i++) {
                      sprites[ATTACK][i] = sheet.getSubimage(20 + (i * 85), 463, 90, 118);
                 }
@@ -389,7 +385,7 @@ public class Enemy {
                     sprites[ATTACK][6 + i] = sheet.getSubimage(15 + (i * 104), 600, 90, 100);
                 }
                 
-                sprites[IDLE] = new BufferedImage[4]; // 프레임 개수 설정
+                sprites[IDLE] = new BufferedImage[4];
                 for(int i = 0; i < 4; i++) {
                    sprites[IDLE][i] = sheet.getSubimage(12 + (i * 104), 12, 90, 90);
                 }
@@ -426,7 +422,7 @@ public class Enemy {
         }
     }
 
-    // 일반 몬스터용 배경 제거 (검은색 제외)
+    // 배경 제거
     private BufferedImage removePinkBackground(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();

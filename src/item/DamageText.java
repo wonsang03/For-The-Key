@@ -1,4 +1,4 @@
-package main;
+package item;
 
 import java.awt.*;
 
@@ -38,3 +38,4 @@ public class DamageText {
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
     }
 }
+

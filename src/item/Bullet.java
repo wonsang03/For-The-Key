@@ -1,4 +1,4 @@
-package main;
+package item;
 
 import java.awt.*;
 
@@ -30,3 +30,4 @@ public class Bullet {
     public double getX() { return x; }
     public double getY() { return y; }
 }
+

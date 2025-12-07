@@ -1,7 +1,7 @@
 package map;
 
 import java.io.BufferedReader;
-import java.io.InputStream;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,61 +21,68 @@ public class MapLoader {
     public static void loadAllRooms() {
         roomCache.clear();
 
-        try (InputStream is = MapLoader.class.getClassLoader().getResourceAsStream("map/data/stage1.txt")) {
-            if (is == null) {
-                System.err.println("stage1.txt 파일을 찾을 수 없습니다.");
+        try {
+            // 파일 시스템에서 직접 읽기
+            java.io.File file = new java.io.File("src/map/data/stage1.txt");
+            if (!file.exists()) {
+                // bin 폴더에서도 시도
+                file = new java.io.File("bin/map/data/stage1.txt");
+            }
+            if (!file.exists()) {
+                System.err.println("stage1.txt 파일을 찾을 수 없습니다. 경로: " + file.getAbsolutePath());
                 return;
             }
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-            String line;
-            Integer currentRoomId = null;
-            List<String> mapLines = new ArrayList<>();
-            List<String[]> connections = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(file), "UTF-8"))) {
+                String line;
+                Integer currentRoomId = null;
+                List<String> mapLines = new ArrayList<>();
+                List<String[]> connections = new ArrayList<>();
 
-            while ((line = reader.readLine()) != null) {
-                // 주석 및 빈 줄 무시
-                if (line.trim().startsWith("#") || line.trim().isEmpty()) {
-                    continue;
-                }
-
-                // @ROOM 태그
-                if (line.startsWith("@ROOM")) {
-                    // 이전 방 저장
-                    if (currentRoomId != null) {
-                        saveRoom(currentRoomId, mapLines, connections);
+                while ((line = reader.readLine()) != null) {
+                    // 주석 및 빈 줄 무시
+                    if (line.trim().startsWith("#") || line.trim().isEmpty()) {
+                        continue;
                     }
 
-                    // 새 방 시작
-                    String[] parts = line.split("\\s+");
-                    currentRoomId = Integer.parseInt(parts[1]);
-                    mapLines.clear();
-                    connections.clear();
-                }
-                // @CONNECT 태그
-                else if (line.startsWith("@CONNECT")) {
-                    String[] parts = line.split("\\s+");
-                    if (parts.length >= 3) {
-                        connections.add(new String[]{parts[1], parts[2]});
+                    // @ROOM 태그
+                    if (line.startsWith("@ROOM")) {
+                        // 이전 방 저장
+                        if (currentRoomId != null) {
+                            saveRoom(currentRoomId, mapLines, connections);
+                        }
+
+                        // 새 방 시작
+                        String[] parts = line.split("\\s+");
+                        currentRoomId = Integer.parseInt(parts[1]);
+                        mapLines.clear();
+                        connections.clear();
+                    }
+                    // @CONNECT 태그
+                    else if (line.startsWith("@CONNECT")) {
+                        String[] parts = line.split("\\s+");
+                        if (parts.length >= 3) {
+                            connections.add(new String[]{parts[1], parts[2]});
+                        }
+                    }
+                    // @STAGE 등 다른 태그는 무시
+                    else if (line.startsWith("@")) {
+                        continue;
+                    }
+                    // 맵 데이터
+                    else {
+                        mapLines.add(line);
                     }
                 }
-                // @STAGE 등 다른 태그는 무시
-                else if (line.startsWith("@")) {
-                    continue;
+
+                // 마지막 방 저장
+                if (currentRoomId != null) {
+                    saveRoom(currentRoomId, mapLines, connections);
                 }
-                // 맵 데이터
-                else {
-                    mapLines.add(line);
-                }
+
+                System.out.println("총 " + roomCache.size() + "개의 방이 로드되었습니다.");
             }
-
-            // 마지막 방 저장
-            if (currentRoomId != null) {
-                saveRoom(currentRoomId, mapLines, connections);
-            }
-
-            System.out.println("총 " + roomCache.size() + "개의 방이 로드되었습니다.");
-
         } catch (Exception e) {
             System.err.println("맵 로드 오류: " + e.getMessage());
             e.printStackTrace();

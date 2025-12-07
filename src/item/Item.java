@@ -1,4 +1,4 @@
-package main;
+package item;
 
 import java.awt.*;
 
@@ -30,3 +30,4 @@ public class Item {
     public boolean isPicked() { return picked; }
     public void pickUp() { picked = true; }
 }
+

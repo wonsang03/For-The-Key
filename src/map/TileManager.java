@@ -1,6 +1,6 @@
 package map;
 
-import game.Constants;
+import common.Constants;
 
 import java.awt.Graphics2D;
 
