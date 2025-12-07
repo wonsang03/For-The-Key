@@ -11,7 +11,7 @@ import javax.imageio.ImageIO;
 
 public class Enemy {
 
-    private EnemyType type;
+    public EnemyType type; // MAGMA_SLIME_BIG 분열 처리를 위해 public으로 변경
     private String name;
     private int hp;
     private int maxHp;
@@ -45,7 +45,10 @@ public class Enemy {
 
     private int spriteCounter = 0;
     private int spriteNum = 0;
-    private final int ANIMATION_SPEED = 9; 
+    private final int ANIMATION_SPEED = 9;
+    
+    // 공격 모션이 진행 중인지 추적하는 플래그
+    private boolean attackAnimationInProgress = false; 
 
     public Enemy(EnemyType type, double startX, double startY) {
         this.type = type;
@@ -129,7 +132,7 @@ public class Enemy {
                 break;
                 
             case ICE_GOLEM:
-                this.attackRange = 100;
+                this.attackRange = 200;
                 this.moveRange = 800;
                 this.hitWidth = 200; 
                 this.hitHeight = 150;
@@ -149,10 +152,10 @@ public class Enemy {
             case MAGMA_SLIME_SMALL:
                 this.attackRange = 100;
                 this.moveRange = 800;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
+                this.hitWidth = 70; 
+                this.hitHeight = 60;
+                this.drawWidth = 70; 
+                this.drawHeight = 60;
                 break;
                 
             case FROZEN_KNIGHT:
@@ -165,7 +168,7 @@ public class Enemy {
                 break;
                 
             case GOLEM:
-                this.attackRange = 100;
+                this.attackRange = 200;
                 this.moveRange = 800;
                 this.hitWidth = 200; 
                 this.hitHeight = 150;
@@ -175,28 +178,28 @@ public class Enemy {
                 break;
                 
             case HELL_HOUND:
-                this.attackRange = 100;
+                this.attackRange = 200;
                 this.moveRange = 800;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
+                this.hitWidth = 90; 
+                this.hitHeight = 70;
+                this.drawWidth = 150; 
+                this.drawHeight = 100;
                 this.spriteDefaultFacesLeft = false;
                 break;
                 
             case HELL_KNIGHT:
-                this.attackRange = 100;
+                this.attackRange = 200;
                 this.moveRange = 800;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
+                this.hitWidth = 90; 
+                this.hitHeight = 70;
+                this.drawWidth = 120; 
+                this.drawHeight = 90;
                 this.spriteDefaultFacesLeft = false;
                 break;
                 
             case YETI:
-                this.attackRange = 100;
-                this.moveRange = 800;
+                this.attackRange = 200;
+                this.moveRange = 500;
                 this.hitWidth = 200; 
                 this.hitHeight = 150;
                 this.drawWidth = 200; 
@@ -205,21 +208,20 @@ public class Enemy {
                 
             case CROCODILE:
                 this.attackRange = 100;
-                this.moveRange = 800;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
+                this.moveRange = 500;
+                this.hitWidth = 90; 
+                this.hitHeight = 70;
+                this.drawWidth = 90; 
+                this.drawHeight = 70;
                 break;
                 
             case MUDGOLEM:
-                this.attackRange = 100;
-                this.moveRange = 800;
+                this.attackRange = 200;
+                this.moveRange = 500;
                 this.hitWidth = 200; 
                 this.hitHeight = 150;
                 this.drawWidth = 200; 
                 this.drawHeight = 150;
-                this.spriteDefaultFacesLeft = false;
                 break;
                 
             case BOMB_SKULL:
@@ -278,6 +280,13 @@ public class Enemy {
                 loadPattern("Slimes.png", 25, 295, 32, 70, 54, 8, ATTACK);
                 isAnimated = true;
             }
+            else if (type == EnemyType.MAGMA_SLIME_SMALL) {
+                // MAGMA_SLIME_SMALL은 MAGMA_SLIME_BIG과 같은 이미지를 사용하지만 크기만 작음
+                loadPattern("Slimes.png", 25, 295, 32, 70, 54, 8, IDLE);
+                loadPattern("Slimes.png", 25, 295, 32, 70, 54, 8, MOVE);
+                loadPattern("Slimes.png", 25, 295, 32, 70, 54, 8, ATTACK);
+                isAnimated = true;
+            }
             else if (type == EnemyType.WOLF) {
                 loadPattern("Wolf.png", 0, 478, 42, 32, 49, 2, IDLE); 
                 loadPattern("Wolf.png", 0, 80, 42, 32, 49, 3, MOVE);
@@ -291,11 +300,15 @@ public class Enemy {
                 isAnimated = true;
             }
             else if (type == EnemyType.CROCODILE) {
-                loadPattern("Crocodile.png", 0, 0, 58, 25, 66, 3, IDLE);
+                loadPattern("Crocodile.png", 0, 0, 58, 25, 66, 1, IDLE);
+                loadPattern("Crocodile.png", 0, 0, 58, 25, 66, 3, MOVE);
+                loadPattern("Crocodile.png", 5, 83, 52, 25, 65, 3, ATTACK);
                 isAnimated = true;
             } 
             else if (type == EnemyType.MUDGOLEM) {
-                loadPattern("low Golem.png", 5, 106, 110, 93, 113, 5, IDLE);
+                loadPattern("low Golem.png", 5, 5, 110, 93, 113, 5, IDLE);
+                loadPattern("low Golem.png", 5, 106, 110, 93, 113, 5, MOVE);
+                loadPattern("low Golem.png", 345, 210, 110, 93, 113, 7, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.SPORE_FLOWER) {
@@ -305,6 +318,8 @@ public class Enemy {
             }
             else if (type == EnemyType.GOLEM) {
                 loadPattern("Golem.png", 2, 2, 75, 60, 82, 11, IDLE);
+                loadPattern("Golem.png", 2, 2, 75, 60, 82, 11, MOVE);
+                loadPattern("Golem.png", 2, 255, 80, 60, 82, 8, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.FROZEN_KNIGHT) {
@@ -312,21 +327,27 @@ public class Enemy {
                 isAnimated = true;
             }
             else if (type == EnemyType.YETI) {
-                loadPattern("Yeti.png", 8, 180, 112, 114, 120, 4, IDLE);
+                loadPattern("Yeti.png", 8, 30, 112, 114, 112, 3, IDLE);
+                loadPattern("Yeti.png", 8, 180, 112, 114, 120, 4, MOVE);
+                loadPattern("Yeti.png", 10, 330, 100, 214, 160, 4, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.SNOW_MAGE) {
                 loadPattern("Snowlady.png", 0, 330, 85, 97, 86, 4, IDLE);
                 loadPattern("Snowlady.png", 0, 330, 85, 97, 86, 4, MOVE);
-                loadPattern("Snowlady.png", 480, 860, 85, 80, 102, 5, ATTACK);
+                loadPattern("Snowlady.png", 0, 860, 85, 80, 102, 5, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.BOMB_SKULL) {
                 loadPattern("Bomb Skull.png", 1, 1, 17, 29, 19, 4, IDLE);
+                loadPattern("Bomb Skull.png", 1, 1, 17, 29, 19, 4, MOVE);
+                loadPattern("Bomb Skull.png", 1, 1, 17, 29, 19, 4, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.HELL_HOUND) {
                 loadPattern("Hell_Hound.png", 1, 1, 79, 79, 82, 12, IDLE);
+                loadPattern("Hell_Hound.png", 1, 1, 79, 79, 82, 12, MOVE);
+                loadPattern("Hell_Hound.png", 412, 255, 79, 79, 82, 6, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.FIRE_IMP) {
@@ -337,6 +358,8 @@ public class Enemy {
             }
             else if (type == EnemyType.HELL_KNIGHT) {
                 loadPattern("Hell_Knight.png", 35, 86, 35, 40, 38, 4, IDLE);
+                loadPattern("Hell_Knight.png", 35, 86, 35, 40, 38, 4, IDLE);
+                loadPattern("Hell_Knight.png", 3, 340, 47, 40, 50, 4, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.ICE_GOLEM) {
@@ -350,35 +373,27 @@ public class Enemy {
                 
                 // ★★★ [ICE_GOLEM 스프라이트 설정] - for 문으로 프레임 설정 ★★★
                 
-                // IDLE 상태 설정
-                sprites[IDLE] = new BufferedImage[10]; // 프레임 개수 설정
+                sprites[MOVE] = new BufferedImage[10]; // 프레임 개수 설정
                 for(int i = 0; i < 6; i++) {
-                    sprites[IDLE][i] = sheet.getSubimage(10 + (i * 104), 220, 90, 120);
+                    sprites[MOVE][i] = sheet.getSubimage(10 + (i * 104), 220, 90, 120);
                 }
                 for(int i = 0; i < 4; i++) {
-                    sprites[IDLE][6 + i] = sheet.getSubimage(10 + (i * 104), 325, 88, 120);
+                    sprites[MOVE][6 + i] = sheet.getSubimage(10 + (i * 104), 325, 88, 120);
                 }
                 
-                // MOVE 상태 설정
-                sprites[MOVE] = new BufferedImage[0]; // 프레임 개수 설정 (0이면 사용 안 함)
-                // for(int i = 0; i < 프레임개수; i++) {
-                //     sprites[MOVE][i] = sheet.getSubimage(시작x + (i * stride), 시작y, width, height);
-                // }
-                // 추가 프레임이 필요한 경우:
-                // for(int i = 0; i < 프레임개수; i++) {
-                //     sprites[MOVE][이전프레임개수 + i] = sheet.getSubimage(시작x + (i * stride), 시작y, width, height);
-                // }
+                sprites[ATTACK] = new BufferedImage[7]; // 프레임 개수 설정 (0이면 사용 안 함)
+                for(int i = 0; i < 6; i++) {
+                     sprites[ATTACK][i] = sheet.getSubimage(20 + (i * 85), 463, 90, 118);
+                }
+                for(int i = 0; i < 1; i++) {
+                    sprites[ATTACK][6 + i] = sheet.getSubimage(15 + (i * 104), 600, 90, 100);
+                }
                 
-                // ATTACK 상태 설정
-                sprites[ATTACK] = new BufferedImage[0]; // 프레임 개수 설정 (0이면 사용 안 함)
-                // for(int i = 0; i < 프레임개수; i++) {
-                //     sprites[ATTACK][i] = sheet.getSubimage(시작x + (i * stride), 시작y, width, height);
-                // }
-                // 추가 프레임이 필요한 경우:
-                // for(int i = 0; i < 프레임개수; i++) {
-                //     sprites[ATTACK][이전프레임개수 + i] = sheet.getSubimage(시작x + (i * stride), 시작y, width, height);
-                // }
-                
+                sprites[IDLE] = new BufferedImage[4]; // 프레임 개수 설정
+                for(int i = 0; i < 4; i++) {
+                   sprites[IDLE][i] = sheet.getSubimage(12 + (i * 104), 12, 90, 90);
+                }
+
                 isAnimated = true;
             }
             
@@ -458,6 +473,21 @@ public class Enemy {
         return image;
     }
     
+    // 데미지를 받는 메서드
+    public void takeDamage(int damage) {
+        if (!alive) return;
+        hp -= damage;
+        if (hp <= 0) {
+            hp = 0;
+            alive = false;
+        }
+    }
+    
+    // 적이 죽었는지 확인하는 메서드
+    public boolean isDead() {
+        return !alive || hp <= 0;
+    }
+    
     public void update(int targetX, int targetY) {
         if (!alive) return;
 
@@ -486,32 +516,53 @@ public class Enemy {
                             type == EnemyType.SNOW_MAGE || 
                             type == EnemyType.FIRE_IMP);
 
-
-        // 1. 공격 범위: distance <= attackRange
-        if (distance <= attackRange) { 
-            if (currentState != ATTACK) {
-                currentState = ATTACK;
-                spriteNum = 0; 
-            }
-            
+        // 공격 모션이 있는지 확인
+        boolean hasAttackAnimation = (sprites != null && 
+                                     sprites[ATTACK] != null && 
+                                     sprites[ATTACK].length > 0);
+        
+        // 공격 모션이 진행 중이면 다른 상태로 변경하지 않음
+        // 공격 모션이 없는 경우에는 attackAnimationInProgress가 false이므로 상태 변경 가능
+        if (attackAnimationInProgress && hasAttackAnimation) {
+            // 공격 모션 중에는 이동하지 않음
             if (isRanged) {
                 // 원거리 몬스터는 공격 범위에 들어오면 멈춤
             }
+            // 공격 모션이 끝날 때까지 대기 (상태 변경하지 않음)
         }
-        // 2. 이동/추적 범위: attackRange < distance <= moveRange
-        else if (distance <= moveRange) { 
-            if (currentState != MOVE) {
-                currentState = MOVE;
-                spriteNum = 0; 
-            }
-            this.x += (dx / distance) * speed; 
-            this.y += (dy / distance) * speed;
-        }
-        // 3. 대기 범위: distance > moveRange
+        // 공격 모션이 완료되었거나 공격 모션이 없거나 공격 모션이 아닐 때만 상태 변경
         else {
-            if (currentState != IDLE) {
-                currentState = IDLE;
-                spriteNum = 0; 
+            // 1. 공격 범위: distance <= attackRange
+            if (distance <= attackRange) { 
+                if (currentState != ATTACK) {
+                    currentState = ATTACK;
+                    spriteNum = 0; 
+                    spriteCounter = 0;
+                    // 공격 모션이 있으면 공격 모션 진행 플래그 설정
+                    if (hasAttackAnimation) {
+                        attackAnimationInProgress = true;
+                    }
+                }
+                
+                if (isRanged) {
+                    // 원거리 몬스터는 공격 범위에 들어오면 멈춤
+                }
+            }
+            // 2. 이동/추적 범위: attackRange < distance <= moveRange
+            else if (distance <= moveRange) { 
+                if (currentState != MOVE) {
+                    currentState = MOVE;
+                    spriteNum = 0; 
+                }
+                this.x += (dx / distance) * speed; 
+                this.y += (dy / distance) * speed;
+            }
+            // 3. 대기 범위: distance > moveRange
+            else {
+                if (currentState != IDLE) {
+                    currentState = IDLE;
+                    spriteNum = 0; 
+                }
             }
         }
 
@@ -527,6 +578,10 @@ public class Enemy {
                 spriteNum++;
                 if (spriteNum >= sprites[animState].length) {
                     spriteNum = 0;
+                    // 공격 모션이 완료되었는지 확인 (ATTACK 상태이고 spriteNum이 0으로 돌아갔을 때)
+                    if (currentState == ATTACK && attackAnimationInProgress) {
+                        attackAnimationInProgress = false; // 공격 모션 완료
+                    }
                 }
                 spriteCounter = 0;
             }

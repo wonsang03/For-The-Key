@@ -59,11 +59,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         //enemies.add(new Enemy(EnemyType.FROZEN_KNIGHT, 700, 200));
         //enemies.add(new Enemy(EnemyType.SNOW_MAGE, 800, 200));
         //enemies.add(new Enemy(EnemyType.ICE_GOLEM, 900, 200));
+        enemies.add(new Enemy(EnemyType.MUDGOLEM, 1000, 200));
         //enemies.add(new Enemy(EnemyType.BOMB_SKULL, 100, 400));
         //enemies.add(new Enemy(EnemyType.HELL_HOUND, 1000, 400));
-        enemies.add(new Enemy(EnemyType.FIRE_IMP, 200, 600));
+        //enemies.add(new Enemy(EnemyType.FIRE_IMP, 200, 600));
         //enemies.add(new Enemy(EnemyType.HELL_KNIGHT, 400, 600));
         //enemies.add(new Enemy(EnemyType.GOBLIN, 600, 600));
+        //enemies.add(new Enemy(EnemyType.MAGMA_SLIME_SMALL, 100, 200));
+        //enemies.add(new Enemy(EnemyType.MAGMA_SLIME_BIG, 100, 200));
         startGameThread();
     }
 
@@ -133,6 +136,32 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         for (Enemy enemy : enemies) {
             enemy.update((int)playerX, (int)playerY); 
         }
+        
+        // 4. 죽은 적 처리 및 MAGMA_SLIME_BIG 분열 처리
+        ArrayList<Enemy> enemiesToRemove = new ArrayList<>();
+        ArrayList<Enemy> enemiesToAdd = new ArrayList<>();
+        
+        for (Enemy enemy : enemies) {
+            if (enemy.isDead()) {
+                // MAGMA_SLIME_BIG이 죽으면 MAGMA_SLIME_SMALL 2마리 생성
+                if (enemy.type == EnemyType.MAGMA_SLIME_BIG) {
+                    // 원래 위치에서 약간 떨어진 위치에 2마리 생성
+                    double offsetX1 = enemy.x - 30;
+                    double offsetY1 = enemy.y - 30;
+                    double offsetX2 = enemy.x + 30;
+                    double offsetY2 = enemy.y + 30;
+                    
+                    enemiesToAdd.add(new Enemy(EnemyType.MAGMA_SLIME_SMALL, offsetX1, offsetY1));
+                    enemiesToAdd.add(new Enemy(EnemyType.MAGMA_SLIME_SMALL, offsetX2, offsetY2));
+                }
+                enemiesToRemove.add(enemy);
+            }
+        }
+        
+        // 죽은 적 제거
+        enemies.removeAll(enemiesToRemove);
+        // 새로 생성된 적 추가
+        enemies.addAll(enemiesToAdd);
         
         // [플레이어-적 충돌 감지 및 밀어내기] 
         final double pushBackSpeed = 3.0; // 밀어내기 속도 (조절 가능: 값이 클수록 더 강하게 밀어냄)
