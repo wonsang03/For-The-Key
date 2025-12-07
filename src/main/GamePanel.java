@@ -4,27 +4,35 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+
 import javax.swing.JPanel;
 
 import common.Constants;
 import player.KeyHandler;
 import player.Player;
-import ui.UIRenderer;
 
 // Runnable 추가 -> 게임이 계속 돌아감 (게임 루프)
 public class GamePanel extends JPanel implements Runnable {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    final int screenWidth = Constants.WINDOW_WIDTH;
-    final int screenHeight = Constants.WINDOW_HEIGHT;
+	// 1. 화면 설정 (Constants 파일에서 가져옴)
+    // 조장님이 정한 TILE_SIZE(64)를 그대로 사용합니다.
+    public final int tileSize = Constants.TILE_SIZE; 
+    
+    // 화면 크기 (1280 x 768)
+    public final int screenWidth = Constants.WINDOW_WIDTH;
+    public final int screenHeight = Constants.WINDOW_HEIGHT;
+
+    // 2. 시스템 설정
+    int FPS = Constants.FPS; // 60프레임
     Thread gameThread;
     
+    // 키보드 핸들러
     KeyHandler keyH = new KeyHandler();
-    Player player = new Player(this, keyH);
     
-    // UI 객체 생성
-    public UIRenderer ui = new UIRenderer(this);
+    // 플레이어 객체 생성
+    public Player player = new Player(this, keyH);
 
     public GamePanel() {
         // 1. 패널 크기 설정
@@ -34,7 +42,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.setBackground(Color.BLACK);
         
         // 3. 성능 설정
-        this.setDoubleBuffered(true);
+        this.setDoubleBuffered(true); // 화면 깜빡임 제거
         this.setFocusable(true);
 
         // 4. 키보드 입력 받기
@@ -75,13 +83,11 @@ public class GamePanel extends JPanel implements Runnable {
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        
         Graphics2D g2 = (Graphics2D) g;
 
         // 플레이어 그리기
         player.draw(g2);
-        
-        // UI 그리기 (플레이어보다 나중에 그려야 화면 맨 위에 뜸)
-        ui.draw(g2);
 
         g2.dispose();
     }

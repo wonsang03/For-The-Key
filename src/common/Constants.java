@@ -15,6 +15,6 @@ public class Constants {
     public static final int WINDOW_WIDTH     = TILE_SIZE * MAX_SCREEN_COL;
     public static final int WINDOW_HEIGHT    = TILE_SIZE * MAX_SCREEN_ROW;
     
-    // 게임 속도 (보통 60프레임이 국룰이라 추가해두는 게 좋습니다)
+    // 게임 속도
     public static final int FPS              = 60;
 }
