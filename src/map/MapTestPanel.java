@@ -19,6 +19,7 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
 
     private TileManager tileManager;
     private RoomData currentRoom;
+    private Minimap minimap;
 
     private Thread gameThread;
     private final int FPS = 60;
@@ -33,8 +34,11 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
         // 초기화
         tileManager = new TileManager();
 
-        // 모든 방 로드
+        // 모든 방 로드 (먼저 로드!)
         MapLoader.loadAllRooms();
+
+        // 미니맵 생성 (방 데이터 로드 후)
+        minimap = new Minimap();
 
         // 시작 방 (Room 0)
         currentRoom = MapLoader.getRoom(0);
@@ -84,6 +88,9 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
 
         // 맵 렌더링
         tileManager.render(g2, currentRoom.getMap());
+
+        // 미니맵 렌더링
+        minimap.render(g2, currentRoom.getRoomId());
 
         // 현재 방 ID 표시
         g2.setColor(Color.WHITE);

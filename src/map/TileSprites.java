@@ -8,12 +8,12 @@ import java.util.Random;
 
 /**
  * 타일 스프라이트 관리 클래스
- * 16x16 크기로 Dungeon_Tileset.png를 잘라서 사용
+ * 204x204 크기로 prost2.png를 잘라서 사용
  */
 public class TileSprites {
     private static BufferedImage spriteSheet;
-    private static final int TILE_SIZE = 16;
-    private static final int TILES_PER_ROW = 10; // Dungeon_Tileset.png는 가로 10개 타일
+    private static final int TILE_SIZE = 204;
+    private static final int TILES_PER_ROW = 10; // prost2.png는 가로 10개 타일
 
     // 각 타일 스프라이트
     private static BufferedImage cornerTopLeft;      // 0번
@@ -29,16 +29,15 @@ public class TileSprites {
     private static BufferedImage doorLeft;           // 48번
     private static BufferedImage doorRight;          // 47번
 
-    // 바닥 타일들 (6,7,8,9,16,17,18,19,26,27,28,29)
-    private static BufferedImage[] floorTiles = new BufferedImage[12];
-    private static final int[] FLOOR_INDICES = {6,7,8,9,16,17,18,19,26,27,28,29};
+    // 바닥 타일 (18번으로 고정)
+    private static BufferedImage floorTile;
 
     /**
      * 스프라이트 시트 로드
      */
     public static void loadSprites() {
         try {
-            spriteSheet = ImageIO.read(new File("src/map/assets/Dungeon_Tileset.png"));
+            spriteSheet = ImageIO.read(new File("src/map/assets/prost2.png"));
 
             // 모서리 타일
             cornerTopLeft = getTileByIndex(0);
@@ -58,16 +57,14 @@ public class TileSprites {
             doorLeft = getTileByIndex(48);
             doorRight = getTileByIndex(47);
 
-            // 바닥 타일들
-            for (int i = 0; i < FLOOR_INDICES.length; i++) {
-                floorTiles[i] = getTileByIndex(FLOOR_INDICES[i]);
-            }
+            // 바닥 타일 (18번으로 고정)
+            floorTile = getTileByIndex(18);
 
-            System.out.println("✓ 타일 스프라이트 로드 완료 (16x16)");
+            System.out.println("✓ 타일 스프라이트 로드 완료 (204x204)");
             System.out.println("  - 모서리: 좌상(0), 우상(5), 좌하(40), 우하(45)");
             System.out.println("  - 벽: 위(1-4), 아래(41-44), 좌(10,20,30), 우(15,25,35)");
             System.out.println("  - 문: 위(36), 아래(37), 좌(48), 우(47)");
-            System.out.println("  - 바닥: 6,7,8,9,16,17,18,19,26,27,28,29");
+            System.out.println("  - 바닥: 18번 고정");
 
         } catch (IOException e) {
             System.err.println("✗ 스프라이트 시트 로드 실패: " + e.getMessage());
@@ -142,15 +139,13 @@ public class TileSprites {
     }
 
     /**
-     * 특정 좌표에 대해 일관된 바닥 타일 반환 (같은 위치는 항상 같은 타일)
+     * 바닥 타일 반환 (18번으로 고정)
      */
     public static BufferedImage getFloorTile(int x, int y) {
-        int seed = x * 1000 + y;
-        Random r = new Random(seed);
-        return floorTiles[r.nextInt(floorTiles.length)];
+        return floorTile;
     }
 
     public static boolean isLoaded() {
-        return cornerTopLeft != null && wallTopTiles != null && doorTop != null && floorTiles[0] != null;
+        return cornerTopLeft != null && wallTopTiles != null && doorTop != null && floorTile != null;
     }
 }
