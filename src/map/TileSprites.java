@@ -1,0 +1,156 @@
+package map;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+
+/**
+ * 타일 스프라이트 관리 클래스
+ * 16x16 크기로 Dungeon_Tileset.png를 잘라서 사용
+ */
+public class TileSprites {
+    private static BufferedImage spriteSheet;
+    private static final int TILE_SIZE = 16;
+    private static final int TILES_PER_ROW = 10; // Dungeon_Tileset.png는 가로 10개 타일
+
+    // 각 타일 스프라이트
+    private static BufferedImage cornerTopLeft;      // 0번
+    private static BufferedImage[] wallTopTiles;     // 1,2,3,4번
+    private static BufferedImage cornerTopRight;     // 5번
+    private static BufferedImage[] wallLeftTiles;    // 10,20,30번
+    private static BufferedImage[] wallRightTiles;   // 15,25,35번
+    private static BufferedImage cornerBottomLeft;   // 40번
+    private static BufferedImage[] wallBottomTiles;  // 41,42,43,44번
+    private static BufferedImage cornerBottomRight;  // 45번
+    private static BufferedImage doorTop;            // 36번
+    private static BufferedImage doorBottom;         // 37번
+    private static BufferedImage doorLeft;           // 48번
+    private static BufferedImage doorRight;          // 47번
+
+    // 바닥 타일들 (6,7,8,9,16,17,18,19,26,27,28,29)
+    private static BufferedImage[] floorTiles = new BufferedImage[12];
+    private static final int[] FLOOR_INDICES = {6,7,8,9,16,17,18,19,26,27,28,29};
+
+    /**
+     * 스프라이트 시트 로드
+     */
+    public static void loadSprites() {
+        try {
+            spriteSheet = ImageIO.read(new File("src/map/assets/Dungeon_Tileset.png"));
+
+            // 모서리 타일
+            cornerTopLeft = getTileByIndex(0);
+            cornerTopRight = getTileByIndex(5);
+            cornerBottomLeft = getTileByIndex(40);
+            cornerBottomRight = getTileByIndex(45);
+
+            // 벽 타일 배열
+            wallTopTiles = new BufferedImage[]{getTileByIndex(1), getTileByIndex(2), getTileByIndex(3), getTileByIndex(4)};
+            wallLeftTiles = new BufferedImage[]{getTileByIndex(10), getTileByIndex(20), getTileByIndex(30)};
+            wallRightTiles = new BufferedImage[]{getTileByIndex(15), getTileByIndex(25), getTileByIndex(35)};
+            wallBottomTiles = new BufferedImage[]{getTileByIndex(41), getTileByIndex(42), getTileByIndex(43), getTileByIndex(44)};
+
+            // 문 타일
+            doorTop = getTileByIndex(36);
+            doorBottom = getTileByIndex(37);
+            doorLeft = getTileByIndex(48);
+            doorRight = getTileByIndex(47);
+
+            // 바닥 타일들
+            for (int i = 0; i < FLOOR_INDICES.length; i++) {
+                floorTiles[i] = getTileByIndex(FLOOR_INDICES[i]);
+            }
+
+            System.out.println("✓ 타일 스프라이트 로드 완료 (16x16)");
+            System.out.println("  - 모서리: 좌상(0), 우상(5), 좌하(40), 우하(45)");
+            System.out.println("  - 벽: 위(1-4), 아래(41-44), 좌(10,20,30), 우(15,25,35)");
+            System.out.println("  - 문: 위(36), 아래(37), 좌(48), 우(47)");
+            System.out.println("  - 바닥: 6,7,8,9,16,17,18,19,26,27,28,29");
+
+        } catch (IOException e) {
+            System.err.println("✗ 스프라이트 시트 로드 실패: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 인덱스로 타일 가져오기
+     * @param index 타일 인덱스 (0부터 시작, 좌->우, 위->아래)
+     */
+    private static BufferedImage getTileByIndex(int index) {
+        int x = (index % TILES_PER_ROW) * TILE_SIZE;
+        int y = (index / TILES_PER_ROW) * TILE_SIZE;
+        return spriteSheet.getSubimage(x, y, TILE_SIZE, TILE_SIZE);
+    }
+
+    public static BufferedImage getCornerTopLeft() {
+        return cornerTopLeft;
+    }
+
+    public static BufferedImage getWallTop(int x, int y) {
+        int seed = x * 1000 + y;
+        Random r = new Random(seed);
+        return wallTopTiles[r.nextInt(wallTopTiles.length)];
+    }
+
+    public static BufferedImage getCornerTopRight() {
+        return cornerTopRight;
+    }
+
+    public static BufferedImage getWallLeft(int x, int y) {
+        int seed = x * 1000 + y;
+        Random r = new Random(seed);
+        return wallLeftTiles[r.nextInt(wallLeftTiles.length)];
+    }
+
+    public static BufferedImage getWallRight(int x, int y) {
+        int seed = x * 1000 + y;
+        Random r = new Random(seed);
+        return wallRightTiles[r.nextInt(wallRightTiles.length)];
+    }
+
+    public static BufferedImage getCornerBottomLeft() {
+        return cornerBottomLeft;
+    }
+
+    public static BufferedImage getWallBottom(int x, int y) {
+        int seed = x * 1000 + y;
+        Random r = new Random(seed);
+        return wallBottomTiles[r.nextInt(wallBottomTiles.length)];
+    }
+
+    public static BufferedImage getCornerBottomRight() {
+        return cornerBottomRight;
+    }
+
+    public static BufferedImage getDoorTop() {
+        return doorTop;
+    }
+
+    public static BufferedImage getDoorLeft() {
+        return doorLeft;
+    }
+
+    public static BufferedImage getDoorRight() {
+        return doorRight;
+    }
+
+    public static BufferedImage getDoorBottom() {
+        return doorBottom;
+    }
+
+    /**
+     * 특정 좌표에 대해 일관된 바닥 타일 반환 (같은 위치는 항상 같은 타일)
+     */
+    public static BufferedImage getFloorTile(int x, int y) {
+        int seed = x * 1000 + y;
+        Random r = new Random(seed);
+        return floorTiles[r.nextInt(floorTiles.length)];
+    }
+
+    public static boolean isLoaded() {
+        return cornerTopLeft != null && wallTopTiles != null && doorTop != null && floorTiles[0] != null;
+    }
+}
