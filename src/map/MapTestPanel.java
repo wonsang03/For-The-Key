@@ -57,6 +57,30 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
         System.out.println("================================\n");
     }
 
+    /**
+     * 특정 스테이지를 로드
+     * @param stageNumber 스테이지 번호 (1-5)
+     */
+    private void loadStage(int stageNumber) {
+        System.out.println("\n>>> 스테이지 " + stageNumber + " 로딩 중...");
+
+        // 스테이지 로드
+        MapLoader.loadAllRooms(stageNumber);
+
+        // 미니맵 재생성
+        minimap = new Minimap();
+
+        // 시작 방으로 이동
+        currentRoom = MapLoader.getRoom(0);
+
+        if (currentRoom != null) {
+            System.out.println(">>> 스테이지 " + stageNumber + " 로드 완료!");
+            printCurrentRoom();
+        } else {
+            System.err.println(">>> 스테이지 " + stageNumber + " 로드 실패!");
+        }
+    }
+
     public void startGameThread() {
         gameThread = new Thread(this);
         gameThread.start();
@@ -92,10 +116,14 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
         // 미니맵 렌더링
         minimap.render(g2, currentRoom.getRoomId());
 
-        // 현재 방 ID 표시
+        // 현재 스테이지 및 방 ID 표시
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("Arial", Font.BOLD, 18));
-        g2.drawString("Room " + currentRoom.getRoomId(), 10, 30);
+        g2.drawString("Stage " + MapLoader.getCurrentStage() + " - Room " + currentRoom.getRoomId(), 10, 30);
+
+        // 조작 안내
+        g2.setFont(new Font("Arial", Font.PLAIN, 14));
+        g2.drawString("Keys: 1-5 (Change Stage)  Q (Quit)", 10, 55);
 
         g2.dispose();
     }
@@ -122,6 +150,14 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
                 System.out.println("테스트 종료");
                 System.exit(0);
                 break;
+            case KeyEvent.VK_1:
+            case KeyEvent.VK_2:
+            case KeyEvent.VK_3:
+            case KeyEvent.VK_4:
+            case KeyEvent.VK_5:
+                int stageNum = key - KeyEvent.VK_0;
+                loadStage(stageNum);
+                return;
         }
 
         // 해당 방향에 연결된 방이 있으면 이동
