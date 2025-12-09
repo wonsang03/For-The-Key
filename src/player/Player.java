@@ -206,4 +206,19 @@ public class Player extends Entity {
     public double getAttackMultiplier() { return attackMultiplier; }
     public double getAttackSpeedBonus() { return attackSpeedBonus; }
     public double getMoveSpeed() { return baseSpeed; }
+    
+    public void receiveDamage(int damage) {
+        // 1. 체력 감소
+        this.hp -= damage;
+        
+        // 2. 로그 출력 (디버깅용)
+        System.out.println("플레이어 피격! 데미지: " + damage + " / 남은 체력: " + this.hp);
+
+        // 3. 사망 처리 (체력이 0 이하가 되면)
+        if (this.hp <= 0) {
+            this.hp = 0;
+            System.out.println("플레이어 사망!");
+            // 여기에 나중에 게임 오버 화면 띄우는 코드(gp.gameState = gp.gameOverState) 등을 추가하면 됨
+        }
+    }
 }
