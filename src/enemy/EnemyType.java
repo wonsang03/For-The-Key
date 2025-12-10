@@ -5,8 +5,8 @@ public enum EnemyType {
     // 형식: 이름, 최대HP, 공격력, 속도, 사거리(range)
     SLIME("Slime", 30, 5, 2.0, 100),
     WOLF("Wolf", 40, 8, 5.0, 80), 
-    GOBLIN("Goblin", 35, 7, 2.5, 250), // 원거리
-    CROCODILE("Crocodile", 150, 12, 2.0, 90),
+    GOBLIN("Goblin", 35, 7, 2.5, 100),
+    SNAKE("Snake", 150, 12, 2.0, 90),
     MUDGOLEM("Mud Golem", 200, 10, 1.0, 100),
     SPORE_FLOWER("Spore Flower", 100, 15, 0.0, 350), // 원거리
     BOMB_SKULL("Bomb Skull", 100, 100, 6.0, 70),
@@ -17,6 +17,7 @@ public enum EnemyType {
     MAGMA_SLIME_SMALL("Magma Slime", 250, 20, 3.0, 64), 
     
     ORC("Orc", 500, 20, 1.5, 100),
+    MINOTAUR("Minotaur", 500, 20, 1.5, 100),
     GOLEM("Golem", 1000, 45, 1.5, 100),
     FROZEN_KNIGHT("Frozen Knight", 375, 16, 3.0, 90),
     YETI("Yeti", 500, 20, 2.0, 120),
