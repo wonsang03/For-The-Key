@@ -46,9 +46,8 @@ public class Player extends Entity {
     
     public void getPlayerImage() {
         try {
-        	// [변경] 이미지 로딩 방식 변경: getClass().getResourceAsStream("/res/player/player.png") 
-        	// → new java.io.File("res/player.png"): 파일 시스템에서 직접 로드하도록 수정
-            java.io.File file = new java.io.File("res/player.png");
+        	// [변경] 이미지 로딩 방식 변경: 프로젝트 루트 기준 경로 사용
+            java.io.File file = Constants.getResourceFile("res/player.png");
             BufferedImage spriteSheet = ImageIO.read(file);
         	
             // 배열 크기: [3열(방향)][4행(동작)]

@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import common.Constants;
+
 /**
  * 맵 데이터 파일을 로드하는 클래스
  */
@@ -22,12 +24,8 @@ public class MapLoader {
         roomCache.clear();
 
         try {
-            // 파일 시스템에서 직접 읽기
-            java.io.File file = new java.io.File("src/map/data/stage1.txt");
-            if (!file.exists()) {
-                // bin 폴더에서도 시도
-                file = new java.io.File("bin/map/data/stage1.txt");
-            }
+            // 프로젝트 루트 기준으로 파일 읽기
+            java.io.File file = Constants.getResourceFile("src/map/data/stage1.txt");
             if (!file.exists()) {
                 System.err.println("stage1.txt 파일을 찾을 수 없습니다. 경로: " + file.getAbsolutePath());
                 return;

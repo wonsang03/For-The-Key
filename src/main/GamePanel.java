@@ -103,6 +103,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         MapLoader.loadAllRooms();
         currentRoom = MapLoader.getRoom(0);
         
+        // 디버그: 맵 로딩 확인
+        if (currentRoom == null) {
+            System.err.println("경고: Room 0을 찾을 수 없습니다!");
+        } else {
+            System.out.println("맵 로드 성공: Room " + currentRoom.getRoomId());
+            char[][] map = currentRoom.getMap();
+            if (map != null) {
+                System.out.println("맵 크기: " + map[0].length + "x" + map.length);
+            }
+        }
+        
         // [김민정님 코드] 플레이어 초기화 [수정: 기존에는 Player 생성자에서 위치 설정했으나, 현재는 생성 후 player.x/y 필드에 직접 접근하여 위치 설정]
         player = new Player(this, keyH);
         player.x = Constants.TILE_SIZE * 10;
