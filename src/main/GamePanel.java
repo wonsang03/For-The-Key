@@ -21,6 +21,7 @@ import enemy.EnemyType;
 // [김민정님 코드] 플레이어 시스템
 import player.Player;
 import player.KeyHandler;
+import ui.UIRenderer;
 // [김선욱님 코드] 전투 시스템 (총알, 아이템, 무기)
 import item.Bullet;
 import item.Item;
@@ -35,11 +36,19 @@ import map.TileType;
 
 public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMotionListener, MouseListener { 
 
+    private static final long serialVersionUID = 1L;
     Thread gameThread;
     final int FPS = Constants.FPS;
 
+    // [민정님 추가] UI 렌더러 및 게임 상태 관리
+    public UIRenderer ui = new UIRenderer(this);
+    public int gameState;
+    public final int titleState = 0;
+    public final int playState = 1;
+    public final int gameOverState = 2;
+
     // [김민정님 코드] 플레이어 및 KeyHandler
-    private Player player;
+    public Player player; // UIRenderer 접근을 위해 public으로 변경
     private KeyHandler keyH = new KeyHandler();
     
     // [김선욱님 코드] 무기 시스템
@@ -70,8 +79,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private ArrayList<int[]> enemySpawnPoints = new ArrayList<>(); // E 타일 위치들 (타일 좌표)
     
     // [서충만님 코드] 맵 타일 및 방 관리
+    public RoomData currentRoom; // UIRenderer 접근을 위해 public으로 변경
     private TileManager tileManager;
-    private RoomData currentRoom;
 
     //생성자: GamePanel 초기화 및 리스너 설정
 
@@ -112,12 +121,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             }
         }
         
-        // [김민정님 코드] 플레이어 초기화 [수정: 기존에는 Player 생성자에서 위치 설정했으나, 현재는 생성 후 player.x/y 필드에 직접 접근하여 위치 설정]
+        // [김민정님 코드] 플레이어 초기화
         player = new Player(this, keyH);
         player.x = Constants.TILE_SIZE * 10;
         player.y = Constants.TILE_SIZE * 6;
         
-        // [서상원님 코드] 카메라 초기화 [수정: 기존 player.getX()/getY() 메서드 호출 → player.x/y 필드 직접 접근으로 변경 (Entity 클래스의 public 필드 사용)]
+        // [서상원님 코드] 카메라 초기화
         cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
         cameraY = player.y - Constants.WINDOW_HEIGHT / 2.0;
         
@@ -125,13 +134,23 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         findEnemySpawnPoints();
         spawnEnemiesFromMap();
         
+        // 리스트 초기화 (재시작 대비)
+        bullets.clear();
+        items.clear();
+        damageTexts.clear();
+        
+        // [민정님 추가] 게임 시작 시 타이틀 화면 상태로 설정
+        gameState = titleState;
+        
         startGameThread();
     }
 
     // 게임 스레드 시작
     public void startGameThread() {
-        gameThread = new Thread(this);
-        gameThread.start();
+        if (gameThread == null) {
+            gameThread = new Thread(this);
+            gameThread.start();
+        }
     }
 
     // 게임 루프: 60 FPS로 update()와 repaint()를 반복 호출
@@ -159,7 +178,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
     //게임 상태 업데이트: 플레이어 이동, 맵 충돌, 카메라, 적, 총알, 아이템 등 모든 게임 오브젝트 업데이트
     public void update() {
-        // [김민정님 코드] 플레이어 이동 업데이트 [수정: 기존에는 oldX, oldY 저장 없이 바로 player.update() 호출했으나, 벽 충돌 시 위치를 되돌리기 위해 이동 전 위치를 oldX, oldY에 저장하도록 추가]
+        // [민정님 추가] 플레이 상태가 아니면(타이틀, 게임오버 등) 게임 로직 멈춤
+        if (gameState != playState) {
+            return;
+        }
+        
+        // [김민정님 코드] 플레이어 이동 업데이트
         double oldX = player.x;
         double oldY = player.y;
         player.update();
@@ -272,6 +296,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             dt.update();
             return dt.isExpired();
         });
+        
+        // [민정님 추가] 플레이어 사망 체크 (HP가 0 이하면 게임오버)
+        if (player.getHP() <= 0) {
+            gameState = gameOverState;
+        }
     }
     
     // [서충만님 코드] 문 충돌 체크 및 방 이동: 플레이어가 문 타일('D')에 닿으면 연결된 방으로 이동
@@ -451,8 +480,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     
     
     //총알 발사: 마우스 위치를 향해 총알을 발사 (공격 속도 제한, 샷건은 여러 발 동시 발사)
-    // [김선욱님 코드] 총알 발사 [수정: 기존 player.getX()/getY() 메서드 호출 → player.x/y 필드 직접 접근으로 변경, 기존 고정값(20, 25) → 타일 크기 기준(Constants.TILE_SIZE / 2)으로 총알 발사 위치 계산 변경]
+    // [김선욱님 코드] 총알 발사
     private void shoot() {
+        if (gameState != playState) return; // [민정님 추가] 플레이 중이 아니면 발사 불가
+        
         long now = System.currentTimeMillis();
         long delay = (long)(currentWeapon.getAttackSpeed() * 1000 / (1 + player.getAttackSpeedBonus()));
         if (now - lastShootTime < delay) return;
@@ -578,12 +609,26 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
         currentWeapon = weapons[currentIdx];
     }
+    
+    // [민정님 추가] Getter (UIRenderer에서 사용)
+    public WeaponType getCurrentWeapon() {
+        return currentWeapon;
+    }
+    public RoomData getCurrentRoom() {
+        return currentRoom;
+    }
 
     //화면 렌더링: 맵, 적, 총알, 아이템, 플레이어, 데미지 텍스트, HUD를 순서대로 그리기
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
+        
+        // [민정님 추가] 타이틀 화면이면 UI만 그리고 리턴
+        if (gameState == titleState) {
+            ui.draw(g2);
+            return;
+        }
 
         // [서충만님 코드] 맵 그리기
         if (currentRoom != null && tileManager != null) {
@@ -640,8 +685,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             g2Copy.dispose();
         }
 
-        // [김선욱님 코드] HUD 그리기
-        drawPlayerHUD(g2);
+        // [민정님 수정] HUD 그리기 (기존 drawPlayerHUD 대신 ui.draw 사용)
+        ui.draw(g2);
         
         g2.dispose();
     }
@@ -709,15 +754,46 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
         
-        // [서상원님 코드] WASD 키 처리
-        if (code == KeyEvent.VK_W) keyW = true;
-        if (code == KeyEvent.VK_S) keyS = true;
-        if (code == KeyEvent.VK_A) keyA = true;
-        if (code == KeyEvent.VK_D) keyD = true;
-        
-        // [김선욱님 코드] 무기 변경 키 (Q/E)
-        if (code == KeyEvent.VK_Q) changeWeapon(false);
-        if (code == KeyEvent.VK_E) changeWeapon(true);
+        // 1. 타이틀 화면 (엔터 -> 시작)
+        if (gameState == titleState) {
+            if (code == KeyEvent.VK_ENTER) {
+                gameState = playState;
+            }
+        }
+        // 2. 플레이 중
+        else if (gameState == playState) {
+            // WASD 이동
+            if (code == KeyEvent.VK_W) keyW = true;
+            if (code == KeyEvent.VK_S) keyS = true;
+            if (code == KeyEvent.VK_A) keyA = true;
+            if (code == KeyEvent.VK_D) keyD = true;
+            
+            // [요청 기능] 소모품 선택
+            if (code == KeyEvent.VK_1) System.out.println("소모품 1번 선택");
+            if (code == KeyEvent.VK_2) System.out.println("소모품 2번 선택");
+            if (code == KeyEvent.VK_3) System.out.println("소모품 3번 선택");
+
+            // [요청 기능] 소모품 사용 (E)
+            if (code == KeyEvent.VK_E) {
+                System.out.println("아이템 사용!");
+                // 추후 아이템 사용 로직 연결
+            }
+            
+            // [요청 기능] 무기 변경 (Q)
+            if (code == KeyEvent.VK_Q) {
+                changeWeapon(true);
+            }
+            
+            // 테스트: P 누르면 강제 게임오버
+            if (code == KeyEvent.VK_P) gameState = gameOverState;
+        }
+        // 3. 게임 오버 (R -> 재시작)
+        else if (gameState == gameOverState) {
+            if (code == KeyEvent.VK_R) {
+                setupGame();
+                gameState = playState;
+            }
+        }
     }
 
     @Override
