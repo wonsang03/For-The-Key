@@ -112,9 +112,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
         cameraY = player.y - Constants.WINDOW_HEIGHT / 2.0;
         
-        // [서상원님 코드] 초기 적 생성
-        enemies.add(new Enemy(EnemyType.MUDGOLEM, 1000, 200));
-        
         startGameThread();
     }
 
@@ -384,7 +381,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         x = Math.max(50, Math.min(Constants.WORLD_WIDTH - 50, x));
         y = Math.max(50, Math.min(Constants.WORLD_HEIGHT - 50, y));
 
-        enemies.add(new Enemy(EnemyType.MUDGOLEM, x, y));
+        enemies.add(new Enemy(EnemyType.SLIME, x, y));
         System.out.println("👾 적 스폰: (" + (int)x + ", " + (int)y + ")");
     }
     

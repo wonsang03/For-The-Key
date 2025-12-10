@@ -28,7 +28,6 @@ public class MainFrame extends JFrame {
         gamePanel.requestFocusInWindow();
         gamePanel.requestFocus();
         
-        // 6. 게임 엔진 시작
-        gamePanel.startGameThread();
+        // 주의: 게임 스레드는 GamePanel 생성자에서 이미 시작됨 (setupGame() -> startGameThread())
     }
 }
