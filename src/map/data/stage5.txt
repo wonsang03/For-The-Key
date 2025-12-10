@@ -1,0 +1,128 @@
+# ========================================
+# Stage 5: The Infernal Depths (지옥)
+# ========================================
+# 모든 방은 20x12 크기로 고정 (20 cols x 12 rows)
+# 문(D)은 벽 중간에 배치, 연결된 방끼리 위치 일치
+#
+# 방 구조 (복잡한 수직 + 분기 구조):
+#         [Room 0: START]
+#               ↓
+#   [Room 1: NORMAL] ← [Room 2: NORMAL]
+#         ↓
+#   [Room 3: KEY] → [Room 5: NORMAL]
+#         ↓
+#   [Room 4: EXIT]
+# ========================================
+
+@STAGE 5
+
+# Room 0: START (시작 방 - 지옥 입구)
+# 연결: SOUTH → Room 1 (하단 중앙에 문)
+@ROOM 0
+@CONNECT SOUTH 1
+WWWWWWWWWWWWWWWWWWWW
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+WWWWWWWWWDWWWWWWWWWW
+
+# Room 1: NORMAL (일반 전투 방 - 화염의 복도)
+# 연결: NORTH → Room 0 (상단 중앙에 문)
+#       SOUTH → Room 3 (하단 중앙에 문)
+#       EAST → Room 2 (우측 중앙에 문)
+@ROOM 1
+@CONNECT NORTH 0
+@CONNECT SOUTH 3
+@CONNECT EAST 2
+WWWWWWWWWDWWWWWWWWWW
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................D
+W..................W
+W..................W
+W..................W
+W..................W
+WWWWWWWWWDWWWWWWWWWW
+
+# Room 2: NORMAL (일반 전투 방 - 불의 제단)
+# 연결: WEST → Room 1 (좌측 중앙에 문)
+@ROOM 2
+@CONNECT WEST 1
+WWWWWWWWWWWWWWWWWWWW
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+D..................W
+W..................W
+W..................W
+W..................W
+W..................W
+WWWWWWWWWWWWWWWWWWWW
+
+# Room 3: KEY (열쇠 방 - 지옥의 중심)
+# 연결: NORTH → Room 1 (상단 중앙에 문)
+#       SOUTH → Room 4 (하단 중앙에 문)
+#       EAST → Room 5 (우측 중앙에 문)
+@ROOM 3
+@CONNECT NORTH 1
+@CONNECT SOUTH 4
+@CONNECT EAST 5
+WWWWWWWWWDWWWWWWWWWW
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................D
+W..................W
+W..................W
+W..................W
+W..................W
+WWWWWWWWWDWWWWWWWWWW
+
+# Room 4: EXIT (다음 스테이지 - 지옥 탈출)
+# 연결: NORTH → Room 3 (상단 중앙에 문)
+# EXIT 타일(E)은 중앙에 배치
+@ROOM 4
+@CONNECT NORTH 3
+WWWWWWWWWDWWWWWWWWWW
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W........E.........W
+W..................W
+WWWWWWWWWWWWWWWWWWWW
+
+# Room 5: NORMAL (일반 전투 방 - 용암의 샘)
+# 연결: WEST → Room 3 (좌측 중앙에 문)
+@ROOM 5
+@CONNECT WEST 3
+WWWWWWWWWWWWWWWWWWWW
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+D..................W
+W..................W
+W..................W
+W..................W
+W..................W
+WWWWWWWWWWWWWWWWWWWW

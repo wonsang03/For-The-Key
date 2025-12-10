@@ -8,26 +8,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import common.Constants;
-
 /**
  * 맵 데이터 파일을 로드하는 클래스
  */
 public class MapLoader {
 
     private static Map<Integer, RoomData> roomCache = new HashMap<>();
+    private static int currentStage = 1;  // 현재 로드된 스테이지 번호
 
     /**
-     * stage1.txt의 모든 방 데이터를 로드
+     * 특정 스테이지의 모든 방 데이터를 로드
+     * @param stageNumber 로드할 스테이지 번호 (1, 2, 3, 4, 5)
      */
-    public static void loadAllRooms() {
+    public static void loadAllRooms(int stageNumber) {
         roomCache.clear();
+        currentStage = stageNumber;
+
+        // 스테이지에 맞는 타일 스프라이트 로드
+        TileSprites.loadSprites(stageNumber);
 
         try {
-            // 프로젝트 루트 기준으로 파일 읽기
-            java.io.File file = Constants.getResourceFile("src/map/data/stage1.txt");
+            // 파일 시스템에서 직접 읽기
+            java.io.File file = new java.io.File("src/map/data/stage" + stageNumber + ".txt");
             if (!file.exists()) {
-                System.err.println("stage1.txt 파일을 찾을 수 없습니다. 경로: " + file.getAbsolutePath());
+                // bin 폴더에서도 시도
+                file = new java.io.File("bin/map/data/stage" + stageNumber + ".txt");
+            }
+            if (!file.exists()) {
+                System.err.println("stage" + stageNumber + ".txt 파일을 찾을 수 없습니다. 경로: " + file.getAbsolutePath());
                 return;
             }
 
@@ -125,10 +133,24 @@ public class MapLoader {
     }
 
     /**
+     * 기본 스테이지(1)를 로드 (하위 호환성)
+     */
+    public static void loadAllRooms() {
+        loadAllRooms(1);
+    }
+
+    /**
      * 특정 방 번호의 RoomData 가져오기
      */
     public static RoomData getRoom(int roomId) {
         return roomCache.get(roomId);
+    }
+
+    /**
+     * 현재 로드된 스테이지 번호 반환
+     */
+    public static int getCurrentStage() {
+        return currentStage;
     }
 
     /**
