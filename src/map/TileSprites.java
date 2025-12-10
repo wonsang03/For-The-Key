@@ -8,12 +8,13 @@ import java.util.Random;
 
 /**
  * 타일 스프라이트 관리 클래스
- * 204x204 크기로 prost2.png를 잘라서 사용
+ * 스테이지별로 다른 타일셋을 로드
  */
 public class TileSprites {
     private static BufferedImage spriteSheet;
     private static final int TILE_SIZE = 204;
-    private static final int TILES_PER_ROW = 10; // prost2.png는 가로 10개 타일
+    private static final int TILES_PER_ROW = 10; // 가로 10개 타일
+    private static int currentStage = 1; // 현재 로드된 스테이지
 
     // 각 타일 스프라이트
     private static BufferedImage cornerTopLeft;      // 0번
@@ -33,11 +34,30 @@ public class TileSprites {
     private static BufferedImage floorTile;
 
     /**
-     * 스프라이트 시트 로드
+     * 기본 스프라이트 시트 로드 (Stage 1)
      */
     public static void loadSprites() {
+        loadSprites(1);
+    }
+
+    /**
+     * 특정 스테이지의 스프라이트 시트 로드
+     * @param stageNumber 스테이지 번호 (1-5)
+     */
+    public static void loadSprites(int stageNumber) {
         try {
-            spriteSheet = ImageIO.read(new File("src/map/assets/prost2.png"));
+            currentStage = stageNumber;
+
+            // 스테이지별 이미지 파일 경로
+            String imagePath;
+            if (stageNumber >= 1 && stageNumber <= 4) {
+                imagePath = "src/map/assets/stage" + stageNumber + ".png";
+            } else {
+                // stage5는 이미지가 없으므로 stage1 재사용
+                imagePath = "src/map/assets/stage1.png";
+            }
+
+            spriteSheet = ImageIO.read(new File(imagePath));
 
             // 모서리 타일
             cornerTopLeft = getTileByIndex(0);
@@ -60,7 +80,8 @@ public class TileSprites {
             // 바닥 타일 (18번으로 고정)
             floorTile = getTileByIndex(18);
 
-            System.out.println("✓ 타일 스프라이트 로드 완료 (204x204)");
+            System.out.println("✓ Stage " + stageNumber + " 타일 스프라이트 로드 완료 (204x204)");
+            System.out.println("  - 이미지: " + imagePath);
             System.out.println("  - 모서리: 좌상(0), 우상(5), 좌하(40), 우하(45)");
             System.out.println("  - 벽: 위(1-4), 아래(41-44), 좌(10,20,30), 우(15,25,35)");
             System.out.println("  - 문: 위(36), 아래(37), 좌(48), 우(47)");
@@ -147,5 +168,12 @@ public class TileSprites {
 
     public static boolean isLoaded() {
         return cornerTopLeft != null && wallTopTiles != null && doorTop != null && floorTile != null;
+    }
+
+    /**
+     * 현재 로드된 스테이지 번호 반환
+     */
+    public static int getCurrentStage() {
+        return currentStage;
     }
 }

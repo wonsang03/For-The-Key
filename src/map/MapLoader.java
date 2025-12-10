@@ -24,6 +24,9 @@ public class MapLoader {
         roomCache.clear();
         currentStage = stageNumber;
 
+        // 스테이지에 맞는 타일 스프라이트 로드
+        TileSprites.loadSprites(stageNumber);
+
         try {
             // 파일 시스템에서 직접 읽기
             java.io.File file = new java.io.File("src/map/data/stage" + stageNumber + ".txt");
