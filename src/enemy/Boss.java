@@ -7,8 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
-import common.Constants;
-
 public class Boss {
 
     // ========== 필드 변수 ==========
@@ -99,7 +97,7 @@ public class Boss {
     // 스프라이트 시트에서 애니메이션 프레임 추출 (가로 방향) - 배경 제거 없음
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state) throws IOException {
         try {
-            File imageFile = Constants.getResourceFile("res/" + fileName);
+            File imageFile = new File("res/" + fileName);
             BufferedImage sheet = ImageIO.read(imageFile);
             if (sheet == null) {
                 return;

@@ -7,8 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
-import java.io.File;
-
+import java.io.InputStream;
 import common.Constants; 
 import enemy.Enemy; // [추가] 적 클래스 import
 import main.GamePanel;
@@ -25,17 +24,13 @@ public class UIRenderer {
         
         baseFont = new Font("Malgun Gothic", Font.BOLD, 16);
         emojiFont = new Font("Segoe UI Emoji", Font.BOLD, 16);
+
         try {
-            // [수정] 프로젝트 루트 기준 경로 사용
-            File titleFile = Constants.getResourceFile("res/ui/title.png");
-            if (titleFile.exists()) {
-                titleImage = ImageIO.read(titleFile);
-            }
+            InputStream is = getClass().getResourceAsStream("/ui/title.png");
+            if (is != null) titleImage = ImageIO.read(is);
             
-            File gameOverFile = Constants.getResourceFile("res/ui/gameover.png");
-            if (gameOverFile.exists()) {
-                gameOverImage = ImageIO.read(gameOverFile);
-            }
+            InputStream is2 = getClass().getResourceAsStream("/ui/gameover.png");
+            if (is2 != null) gameOverImage = ImageIO.read(is2);
             
         } catch (Exception e) {
             e.printStackTrace();

@@ -47,7 +47,7 @@ public class Player extends Entity {
     public void getPlayerImage() {
         try {
         	// [변경] 이미지 로딩 방식 변경: 프로젝트 루트 기준 경로 사용
-            java.io.File file = Constants.getResourceFile("res/player.png");
+            java.io.File file = new java.io.File("res/player.png");
             
             if (!file.exists()) {
                 System.err.println("경고: 플레이어 이미지 파일을 찾을 수 없습니다: " + file.getAbsolutePath());

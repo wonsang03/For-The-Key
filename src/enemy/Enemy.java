@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 
-import common.Constants;
-
 public class Enemy {
 
     // ========== 필드 변수 ==========
@@ -395,7 +393,7 @@ public class Enemy {
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state, boolean... useBlackRemoval) throws IOException {
         try {
             // 스프라이트 시트 파일 읽기
-            File imageFile = Constants.getResourceFile("res/" + fileName);
+            File imageFile = new File("res/" + fileName);
             BufferedImage sheet = ImageIO.read(imageFile);
             if (sheet == null) {
                 return;
