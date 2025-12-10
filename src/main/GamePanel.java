@@ -66,10 +66,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     public double cameraY = 0; // 카메라 Y 좌표
     private final double CAMERA_LERP = 0.05; // 카메라 부드러움
     
-    // [김선욱님 코드] 적 스폰 시스템
-    private long lastSpawnTime = 0; // 마지막 스폰 시간
-    private long spawnInterval = 3000; // 스폰 간격
-    private int maxEnemies = 5; // 최대 스폰
+    // [서상원님 코드] 적 스폰 시스템 (맵 기반)
+    private ArrayList<int[]> enemySpawnPoints = new ArrayList<>(); // E 타일 위치들 (타일 좌표)
     
     // [서충만님 코드] 맵 타일 및 방 관리
     private TileManager tileManager;
@@ -100,7 +98,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     public void setupGame() {
         // [서충만님 코드] 맵 초기화
         tileManager = new TileManager();
-        MapLoader.loadAllRooms();
+        MapLoader.loadAllRooms(1); // 스테이지 1부터 시작
         currentRoom = MapLoader.getRoom(0);
         
         // 디버그: 맵 로딩 확인
@@ -122,6 +120,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         // [서상원님 코드] 카메라 초기화 [수정: 기존 player.getX()/getY() 메서드 호출 → player.x/y 필드 직접 접근으로 변경 (Entity 클래스의 public 필드 사용)]
         cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
         cameraY = player.y - Constants.WINDOW_HEIGHT / 2.0;
+        
+        // [서상원님 코드] 현재 방의 적 스폰 포인트 찾기 및 스폰
+        findEnemySpawnPoints();
+        spawnEnemiesFromMap();
         
         startGameThread();
     }
@@ -221,13 +223,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         double targetCameraY = playerY - Constants.WINDOW_HEIGHT / 2.0;
         cameraX += (targetCameraX - cameraX) * CAMERA_LERP;
         cameraY += (targetCameraY - cameraY) * CAMERA_LERP;
-        
-        // [김선욱님 코드] 적 스폰 체크
-        long now = System.currentTimeMillis();
-        if (now - lastSpawnTime > spawnInterval && enemies.size() < maxEnemies) {
-            spawnEnemy();
-            lastSpawnTime = now;
-        }
         
         // [서상원님 코드] 적 업데이트 (플레이어 추적)
         for (Enemy enemy : enemies) {
@@ -332,7 +327,101 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     }
                     
                     System.out.println("→ " + direction + " 방향으로 Room " + targetRoomId + "로 이동");
+                    
+                    // [서상원님 코드] 새 방으로 이동 시 적 스폰 포인트 찾기 및 스폰
+                    findEnemySpawnPoints();
+                    spawnEnemiesFromMap();
                 }
+            }
+        }
+    }
+    
+    // [서상원님 코드] 맵에서 E 타일 위치 찾기
+    private void findEnemySpawnPoints() {
+        enemySpawnPoints.clear();
+        if (currentRoom == null) return;
+        
+        char[][] map = currentRoom.getMap();
+        if (map == null) return;
+        
+        for (int y = 0; y < map.length; y++) {
+            for (int x = 0; x < map[y].length; x++) {
+                if (map[y][x] == 'E') {
+                    enemySpawnPoints.add(new int[]{x, y});
+                }
+            }
+        }
+        
+        System.out.println("적 스폰 포인트 " + enemySpawnPoints.size() + "개 발견");
+    }
+    
+    // [서상원님 코드] 스테이지별 적 타입 랜덤 선택
+    private EnemyType getRandomEnemyTypeForStage(int stage) {
+        EnemyType[] types;
+        
+        switch (stage) {
+            case 1:
+                types = new EnemyType[]{EnemyType.SLIME, EnemyType.WOLF, EnemyType.GOBLIN, EnemyType.MINOTAUR};
+                break;
+            case 2:
+                types = new EnemyType[]{EnemyType.SNAKE, EnemyType.SPORE_FLOWER, EnemyType.MUDGOLEM, EnemyType.GOLEM};
+                break;
+            case 3:
+                types = new EnemyType[]{EnemyType.ICE_GOLEM, EnemyType.YETI, EnemyType.SNOW_MAGE, EnemyType.FROZEN_KNIGHT};
+                break;
+            case 4:
+                types = new EnemyType[]{EnemyType.BOMB_SKULL, EnemyType.HELL_HOUND, EnemyType.FIRE_IMP, EnemyType.HELL_KNIGHT, EnemyType.MAGMA_SLIME_BIG};
+                break;
+            case 5:
+                // 5스테이지는 보스만 (별도 처리)
+                return null;
+            default:
+                types = new EnemyType[]{EnemyType.SLIME};
+        }
+        
+        return types[(int)(Math.random() * types.length)];
+    }
+    
+    // [서상원님 코드] 맵의 E 타일 위치에서 적 스폰
+    private void spawnEnemiesFromMap() {
+        if (enemySpawnPoints.isEmpty()) return;
+        
+        int currentStage = MapLoader.getCurrentStage();
+        
+        // 기존 적들 제거 (새 방으로 이동 시)
+        enemies.clear();
+        
+        // 5스테이지는 보스만 스폰 (첫 번째 E 타일 위치에만)
+        if (currentStage == 5) {
+            if (!enemySpawnPoints.isEmpty()) {
+                int[] spawnPoint = enemySpawnPoints.get(0);
+                int tileX = spawnPoint[0];
+                int tileY = spawnPoint[1];
+                double spawnX = (tileX + 0.5) * Constants.TILE_SIZE;
+                double spawnY = (tileY + 0.5) * Constants.TILE_SIZE;
+                
+                // 보스 스폰 (Boss 클래스 사용 - 별도 구현 필요)
+                // 일단 보스는 Enemy로 대체 (나중에 Boss 클래스로 변경 가능)
+                // enemies.add(new Boss(spawnX, spawnY));
+                System.out.println("보스 스폰 위치: (" + tileX + ", " + tileY + ") - 보스 스폰은 아직 구현되지 않았습니다.");
+            }
+            return;
+        }
+        
+        // 각 스폰 포인트에서 적 스폰
+        for (int[] spawnPoint : enemySpawnPoints) {
+            int tileX = spawnPoint[0];
+            int tileY = spawnPoint[1];
+            
+            // 타일 좌표를 픽셀 좌표로 변환 (타일 중심)
+            double spawnX = (tileX + 0.5) * Constants.TILE_SIZE;
+            double spawnY = (tileY + 0.5) * Constants.TILE_SIZE;
+            
+            // 스테이지별 랜덤 적 타입 선택
+            EnemyType enemyType = getRandomEnemyTypeForStage(currentStage);
+            if (enemyType != null) {
+                enemies.add(new Enemy(enemyType, spawnX, spawnY));
+                System.out.println("적 스폰: " + enemyType.getName() + " at (" + tileX + ", " + tileY + ")");
             }
         }
     }
@@ -360,41 +449,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         g2.fillRect(mapPixelWidth - cornerSize, mapPixelHeight - cornerSize, cornerSize, cornerSize);
     }
     
-    //적 생성: 플레이어 주변 랜덤 위치에 적을 생성
-    //[김선욱님 코드] 적 스폰 [수정: 기존 player.getX()/getY() 메서드 호출 → player.x/y 필드 직접 접근으로 변경, 월드 경계 체크 로직 추가 (x, y를 50 ~ WORLD_WIDTH/HEIGHT-50 범위로 제한)]
-    private void spawnEnemy() {
-        int margin = 100;
-        int side = (int)(Math.random() * 4);
-        double x = 0, y = 0;
-        double playerX = player.x;
-        double playerY = player.y;
-
-        switch (side) {
-            case 0:
-                x = playerX + (Math.random() - 0.5) * Constants.WINDOW_WIDTH;
-                y = playerY - Constants.WINDOW_HEIGHT / 2 - margin;
-                break;
-            case 1:
-                x = playerX + (Math.random() - 0.5) * Constants.WINDOW_WIDTH;
-                y = playerY + Constants.WINDOW_HEIGHT / 2 + margin;
-                break;
-            case 2:
-                x = playerX - Constants.WINDOW_WIDTH / 2 - margin;
-                y = playerY + (Math.random() - 0.5) * Constants.WINDOW_HEIGHT;
-                break;
-            case 3:
-                x = playerX + Constants.WINDOW_WIDTH / 2 + margin;
-                y = playerY + (Math.random() - 0.5) * Constants.WINDOW_HEIGHT;
-                break;
-        }
-        
-        // [서상원님 코드] 월드 경계 체크
-        x = Math.max(50, Math.min(Constants.WORLD_WIDTH - 50, x));
-        y = Math.max(50, Math.min(Constants.WORLD_HEIGHT - 50, y));
-
-        enemies.add(new Enemy(EnemyType.SLIME, x, y));
-        System.out.println("👾 적 스폰: (" + (int)x + ", " + (int)y + ")");
-    }
     
     //총알 발사: 마우스 위치를 향해 총알을 발사 (공격 속도 제한, 샷건은 여러 발 동시 발사)
     // [김선욱님 코드] 총알 발사 [수정: 기존 player.getX()/getY() 메서드 호출 → player.x/y 필드 직접 접근으로 변경, 기존 고정값(20, 25) → 타일 크기 기준(Constants.TILE_SIZE / 2)으로 총알 발사 위치 계산 변경]

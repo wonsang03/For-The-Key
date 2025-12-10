@@ -48,7 +48,22 @@ public class Player extends Entity {
         try {
         	// [변경] 이미지 로딩 방식 변경: 프로젝트 루트 기준 경로 사용
             java.io.File file = Constants.getResourceFile("res/player.png");
+            
+            if (!file.exists()) {
+                System.err.println("경고: 플레이어 이미지 파일을 찾을 수 없습니다: " + file.getAbsolutePath());
+                System.err.println("플레이어 이미지가 표시되지 않을 수 있습니다.");
+                // 빈 이미지 배열 초기화 (NullPointerException 방지)
+                animations = new BufferedImage[3][totalFrames];
+                return;
+            }
+            
             BufferedImage spriteSheet = ImageIO.read(file);
+            
+            if (spriteSheet == null) {
+                System.err.println("경고: 플레이어 이미지를 읽을 수 없습니다.");
+                animations = new BufferedImage[3][totalFrames];
+                return;
+            }
         	
             // 배열 크기: [3열(방향)][4행(동작)]
             animations = new BufferedImage[3][totalFrames];
@@ -64,9 +79,17 @@ public class Player extends Entity {
                 }
             }
             
+            System.out.println("플레이어 이미지 로드 성공: " + file.getAbsolutePath());
+            
         } catch (IOException e) {
         	e.printStackTrace();
-            System.out.println("이미지 로드 실패! /res/player/player.png 파일을 확인하세요.");
+            System.err.println("이미지 로드 실패! res/player.png 파일을 확인하세요.");
+            // 빈 이미지 배열 초기화 (NullPointerException 방지)
+            animations = new BufferedImage[3][totalFrames];
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("플레이어 이미지 로드 중 오류 발생: " + e.getMessage());
+            animations = new BufferedImage[3][totalFrames];
         }
     }
 
@@ -163,8 +186,17 @@ public class Player extends Entity {
 
         // 안전 장치 후 이미지 선택
         // animations[방향][동작]
-        if (animations != null) {
+        if (animations != null && colDir < animations.length && rowFrame < animations[colDir].length) {
             image = animations[colDir][rowFrame];
+        }
+
+        // 이미지가 없으면 기본 사각형으로 표시 (디버깅용)
+        if (image == null) {
+            g2.setColor(java.awt.Color.CYAN);
+            g2.fillRect(x, y, Constants.TILE_SIZE, Constants.TILE_SIZE);
+            g2.setColor(java.awt.Color.BLACK);
+            g2.drawRect(x, y, Constants.TILE_SIZE, Constants.TILE_SIZE);
+            return;
         }
 
         // [추가] 왼쪽 방향일 때 이미지를 수평 반전시켜서 그리기: drawImage의 음수 width 사용

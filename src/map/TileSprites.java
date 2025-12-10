@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
+import common.Constants;
+
 /**
  * 타일 스프라이트 관리 클래스
  * 스테이지별로 다른 타일셋을 로드
@@ -57,7 +59,8 @@ public class TileSprites {
                 imagePath = "src/map/assets/stage1.png";
             }
 
-            spriteSheet = ImageIO.read(new File(imagePath));
+            File imageFile = Constants.getResourceFile(imagePath);
+            spriteSheet = ImageIO.read(imageFile);
 
             // 모서리 타일
             cornerTopLeft = getTileByIndex(0);
