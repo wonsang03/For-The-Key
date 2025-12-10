@@ -55,7 +55,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private WeaponType currentWeapon = WeaponType.PISTOL;
     
     // [서상원님 코드] 적 시스템
-    private ArrayList<enemy.Enemy> enemies = new ArrayList<>();
+    public ArrayList<enemy.Enemy> enemies = new ArrayList<>(); // [민정님 수정] UIRenderer 접근을 위해 public으로 변경
     
     // [김선욱님 코드] 전투 시스템 리스트 (총알, 아이템, 데미지 텍스트)
     private ArrayList<Bullet> bullets = new ArrayList<>(); // 총알
@@ -83,6 +83,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private TileManager tileManager;
 
     //생성자: GamePanel 초기화 및 리스너 설정
+    // [민정님 추가] 생성자 주석
 
     public GamePanel() {
         // [서상원님 코드] 패널 기본 설정
@@ -243,17 +244,20 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
 
         // [서상원님 코드] 카메라 추적 (LERP)
+        // [민정님 추가] 카메라 추적 주석
         double targetCameraX = playerX - Constants.WINDOW_WIDTH / 2.0;
         double targetCameraY = playerY - Constants.WINDOW_HEIGHT / 2.0;
         cameraX += (targetCameraX - cameraX) * CAMERA_LERP;
         cameraY += (targetCameraY - cameraY) * CAMERA_LERP;
         
         // [서상원님 코드] 적 업데이트 (플레이어 추적)
+        // [민정님 추가] 적 업데이트 주석
         for (Enemy enemy : enemies) {
             enemy.update((int)playerX, (int)playerY); 
         }
         
         // [서상원님 코드] 죽은 적 처리 및 MAGMA_SLIME_BIG 분열
+        // [민정님 추가] 적 사망 처리 주석
         ArrayList<Enemy> enemiesToRemove = new ArrayList<>();
         ArrayList<Enemy> enemiesToAdd = new ArrayList<>();
         
@@ -283,15 +287,18 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         enemies.addAll(enemiesToAdd);
         
         // [김선욱님 코드] 총알 업데이트
+        // [민정님 추가] 총알 업데이트 주석
         bullets.removeIf(b -> { b.update(); return !b.isActive(); });
         
         // [김선욱님 코드] 총알-적 충돌 감지
+        // [민정님 추가] 충돌 체크 주석
         checkBulletCollisions();
         
         // [김선욱님 코드] 아이템 획득 체크
         checkItemPickups();
         
         // [김선욱님 코드] 데미지 텍스트 업데이트
+        // [민정님 추가] 데미지 텍스트 업데이트 주석
         damageTexts.removeIf(dt -> {
             dt.update();
             return dt.isExpired();
@@ -304,6 +311,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     }
     
     // [서충만님 코드] 문 충돌 체크 및 방 이동: 플레이어가 문 타일('D')에 닿으면 연결된 방으로 이동
+    // [민정님 추가] 문 충돌 체크 및 방 이동 주석
     private void checkDoorCollision(int tileX, int tileY, char[][] map) {
         if (currentRoom == null) return;
         
@@ -481,6 +489,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     
     //총알 발사: 마우스 위치를 향해 총알을 발사 (공격 속도 제한, 샷건은 여러 발 동시 발사)
     // [김선욱님 코드] 총알 발사
+    // [민정님 추가] 총알 발사 주석
     private void shoot() {
         if (gameState != playState) return; // [민정님 추가] 플레이 중이 아니면 발사 불가
         
@@ -562,6 +571,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
     //아이템 효과 적용: 획득한 아이템의 스탯 보너스를 플레이어에 적용하고 회복 아이템은 체력 회복
     // [김선욱님 코드] 아이템 효과 적용 [수정: 기존 DamageText 생성 시 player.getX()/getY() 메서드 호출 → player.x/y 필드 직접 접근으로 변경]
+    // [민정님 추가] 아이템 효과 주석
     private void applyItemEffect(ItemType type) {
         if (type == null) return;
 
@@ -619,6 +629,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     }
 
     //화면 렌더링: 맵, 적, 총알, 아이템, 플레이어, 데미지 텍스트, HUD를 순서대로 그리기
+    // [민정님 추가] 화면 렌더링 주석
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -809,6 +820,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     
     //마우스 입력 처리: 마우스 위치 추적 및 왼쪽 버튼 클릭 시 총알 발사
     // [김선욱님 코드] 마우스 위치 추적
+    // [민정님 추가] 마우스 입력 처리 주석
     @Override
     public void mouseMoved(MouseEvent e) { 
         mouseX = e.getX(); 
