@@ -12,6 +12,7 @@ import java.util.Random;
  */
 public class TileSprites {
     private static BufferedImage spriteSheet;
+    private static BufferedImage keyRoomSheet;  // KeyRoom.png 스프라이트 시트
     private static final int TILE_SIZE = 204;
     private static final int TILES_PER_ROW = 10; // 가로 10개 타일
     private static int currentStage = 1; // 현재 로드된 스테이지
@@ -29,6 +30,12 @@ public class TileSprites {
     private static BufferedImage doorBottom;         // 37번
     private static BufferedImage doorLeft;           // 48번
     private static BufferedImage doorRight;          // 47번
+
+    // EXIT 문 타일 (KeyRoom.png에서 로드)
+    private static BufferedImage exitDoorTop;        // 36번
+    private static BufferedImage exitDoorBottom;     // 37번
+    private static BufferedImage exitDoorLeft;       // 48번
+    private static BufferedImage exitDoorRight;      // 47번
 
     // 바닥 타일 (18번으로 고정)
     private static BufferedImage floorTile;
@@ -62,6 +69,9 @@ public class TileSprites {
 
             spriteSheet = ImageIO.read(new File(imagePath));
 
+            // KeyRoom.png 스프라이트 시트 로드 (EXIT 문용)
+            keyRoomSheet = ImageIO.read(new File("src/map/assets/keyRoom.png"));
+
             // 모서리 타일
             cornerTopLeft = getTileByIndex(0);
             cornerTopRight = getTileByIndex(5);
@@ -79,6 +89,12 @@ public class TileSprites {
             doorBottom = getTileByIndex(37);
             doorLeft = getTileByIndex(48);
             doorRight = getTileByIndex(47);
+
+            // EXIT 문 타일 (KeyRoom.png에서 로드)
+            exitDoorTop = getTileByIndexFromKeyRoom(36);
+            exitDoorBottom = getTileByIndexFromKeyRoom(37);
+            exitDoorLeft = getTileByIndexFromKeyRoom(48);
+            exitDoorRight = getTileByIndexFromKeyRoom(47);
 
             // 바닥 타일 (18번으로 고정)
             floorTile = getTileByIndex(18);
@@ -108,6 +124,16 @@ public class TileSprites {
         int x = (index % TILES_PER_ROW) * TILE_SIZE;
         int y = (index / TILES_PER_ROW) * TILE_SIZE;
         return spriteSheet.getSubimage(x, y, TILE_SIZE, TILE_SIZE);
+    }
+
+    /**
+     * KeyRoom.png에서 인덱스로 타일 가져오기
+     * @param index 타일 인덱스 (0부터 시작, 좌->우, 위->아래)
+     */
+    private static BufferedImage getTileByIndexFromKeyRoom(int index) {
+        int x = (index % TILES_PER_ROW) * TILE_SIZE;
+        int y = (index / TILES_PER_ROW) * TILE_SIZE;
+        return keyRoomSheet.getSubimage(x, y, TILE_SIZE, TILE_SIZE);
     }
 
     public static BufferedImage getCornerTopLeft() {
@@ -178,6 +204,25 @@ public class TileSprites {
      */
     public static BufferedImage getChestTile() {
         return chestTile;
+    }
+
+    /**
+     * EXIT 문 타일 반환 (KeyRoom.png에서 로드)
+     */
+    public static BufferedImage getExitDoorTop() {
+        return exitDoorTop;
+    }
+
+    public static BufferedImage getExitDoorBottom() {
+        return exitDoorBottom;
+    }
+
+    public static BufferedImage getExitDoorLeft() {
+        return exitDoorLeft;
+    }
+
+    public static BufferedImage getExitDoorRight() {
+        return exitDoorRight;
     }
 
     public static boolean isLoaded() {

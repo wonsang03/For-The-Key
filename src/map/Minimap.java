@@ -24,6 +24,7 @@ public class Minimap {
     private static final Color CURRENT_ROOM_COLOR = new Color(100, 200, 255);  // 현재 방 (밝은 파랑)
     private static final Color VISITED_ROOM_COLOR = new Color(150, 150, 150);  // 방문한 방 (회색)
     private static final Color KEY_ROOM_COLOR = new Color(255, 215, 0);        // 열쇠 방 (금색)
+    private static final Color ELITE_ROOM_COLOR = new Color(220, 20, 60);      // 정예 방 (빨간색)
     private static final Color CONNECTION_COLOR = new Color(100, 100, 100);     // 연결선 (어두운 회색)
     private static final Color BORDER_COLOR = new Color(200, 200, 200);         // 테두리
 
@@ -195,6 +196,8 @@ public class Minimap {
             g2.setColor(CURRENT_ROOM_COLOR);
         } else if ("KEY".equals(roomType)) {
             g2.setColor(KEY_ROOM_COLOR);
+        } else if ("ELITE".equals(roomType)) {
+            g2.setColor(ELITE_ROOM_COLOR);
         } else {
             g2.setColor(VISITED_ROOM_COLOR);
         }

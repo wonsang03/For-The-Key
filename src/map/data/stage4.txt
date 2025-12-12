@@ -4,9 +4,11 @@
 # 방 구조:
 #   [Room 0: START] → [Room 1: NORMAL] → [Room 2: KEY]
 #                            ↓                 ↓
-#                       [Room 3: KEY] → [Room 4: KEY]
+#                       [Room 3: ELITE] → [Room 4: KEY]
 #                            ↓                 ↓
-#                       [Room 5: KEY] ← [Room 6: EXIT]
+#                       [Room 5: KEY] → [Room 6: KEY]
+#                            ↓                 ↓
+#                       [Room 7: EXIT] ←──────┘
 # ========================================
 
 @STAGE 4
@@ -36,14 +38,14 @@ WWWWWWWWWWWWWWWWWWWW
 @CONNECT SOUTH 3
 WWWWWWWWWWWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
-W..................W
-W..................W
+W......E...........W
 D.........C........D
+W......E...........W
 W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
@@ -54,20 +56,20 @@ WWWWWWWWWDWWWWWWWWWW
 @CONNECT SOUTH 4
 WWWWWWWWWWWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
-W..................W
-W..................W
+W......E...........W
 D..................W
+W......E...........W
 W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
-# Room 3: KEY (열쇠 방 2 - 20x12)
+# Room 3: ELITE (엘리트 전투 방 - 20x12)
 # 연결: NORTH → Room 1, EAST → Room 4, SOUTH → Room 5
-@ROOM 3 KEY
+@ROOM 3 ELITE
 @CONNECT NORTH 1
 @CONNECT EAST 4
 @CONNECT SOUTH 5
@@ -76,7 +78,7 @@ W..................W
 W..................W
 W..................W
 W..................W
-W..................W
+W.....L.......L....W
 W..................D
 W..................W
 W..................W
@@ -84,7 +86,7 @@ W..................W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
-# Room 4: KEY (열쇠 방 3 - 20x12)
+# Room 4: KEY (열쇠 방 2 - 20x12)
 # 연결: NORTH → Room 2, WEST → Room 3, SOUTH → Room 6
 @ROOM 4 KEY
 @CONNECT NORTH 2
@@ -92,49 +94,67 @@ WWWWWWWWWDWWWWWWWWWW
 @CONNECT SOUTH 6
 WWWWWWWWWDWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
-W..................W
-W..................W
+W......E...........W
 D..................W
+W......E...........W
 W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
-# Room 5: KEY (열쇠 방 4 - 20x12)
-# 연결: NORTH → Room 3, EAST → Room 6
+# Room 5: KEY (열쇠 방 3 - 20x12)
+# 연결: NORTH → Room 3, EAST → Room 6, SOUTH → Room 7
 @ROOM 5 KEY
 @CONNECT NORTH 3
 @CONNECT EAST 6
+@CONNECT SOUTH 7
 WWWWWWWWWDWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
-W..................W
-W..................W
+W......E...........W
 W..................D
+W......E...........W
 W..................W
+W....E.......E.....W
 W..................W
-W..................W
-W..................W
-WWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWDWWWWWWWWWW
 
-# Room 6: EXIT (다음 스테이지 - 얼음 동굴 출구)
-# 연결: NORTH → Room 4, WEST → Room 5
-@ROOM 6 NORMAL
+# Room 6: KEY (열쇠 방 4 - 20x12)
+# 연결: NORTH → Room 4, WEST → Room 5, SOUTH → Room 7
+@ROOM 6 KEY
 @CONNECT NORTH 4
 @CONNECT WEST 5
 WWWWWWWWWDWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
-W..................W
-W..................W
+W......E...........W
 D..................W
+W......E...........W
+W..................W
+W....E.......E.....W
+W..................W
+WWWWWWWWWWWWWWWWWWWW
+
+# Room 7: EXIT (다음 스테이지 - 얼음 동굴 출구)
+# 연결: NORTH → Room 5, EAST → Room 6
+@ROOM 7 NORMAL
+@CONNECT NORTH 5
+WWWWWWWWWDWWWWWWWWWW
 W..................W
 W..................W
-W........E.........W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W..................W
+W........X.........W
 W..................W
 WWWWWWWWWWWWWWWWWWWW

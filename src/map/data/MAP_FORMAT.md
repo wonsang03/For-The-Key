@@ -86,8 +86,9 @@
 |------|------|----------|
 | START | 플레이어 시작 방 | 20x12 |
 | NORMAL | 일반 전투 방 | 20x12 |
-| KEY | 열쇠가 있는 방 (작은 방) | 12x8 |
-| BOSS | 보스전 방 | 24x16 |
+| ELITE | 정예 몹 방 | 20x12 |
+| KEY | 열쇠가 있는 방 | 20x12 |
+| BOSS | 보스전 방 | 20x12 |
 | EXIT | 다음 스테이지로 가는 방 | 20x12 |
 
 ## 스테이지별 방 구조
@@ -96,8 +97,8 @@
 |---------|-----------|------|
 | Stage 1 | 4개 | START(1) + NORMAL(2) + KEY(1) |
 | Stage 2 | 5개 | START(1) + NORMAL(2) + KEY(2) |
-| Stage 3 | 6개 | START(1) + NORMAL(2) + KEY(3) |
-| Stage 4 | 7개 | START(1) + NORMAL(2) + KEY(4) |
+| Stage 3 | 7개 | START(1) + NORMAL(2) + ELITE(1) + KEY(3) |
+| Stage 4 | 8개 | START(1) + NORMAL(2) + ELITE(1) + KEY(4) |
 | Stage 5 | 2개 | START(1) + BOSS(1) |
 
 ---

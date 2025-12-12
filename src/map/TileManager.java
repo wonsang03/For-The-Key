@@ -84,12 +84,16 @@ public class TileManager {
         if (tile == 'W') {
             // 벽 타일 - 위치에 따라 다른 스프라이트 사용
             sprite = getWallSprite(x, y, map);
-        } else if (tile == 'D' || tile == 'E') {
-            // 문 또는 출구 - 위치에 따라 회전된 문 스프라이트 사용
+        } else if (tile == 'D') {
+            // 문 - 위치에 따라 회전된 문 스프라이트 사용
             sprite = getDoorSprite(x, y, map);
-        } else if (tile == '.' || tile == 'C') {
+        } else if (tile == 'X') {
+            // 출구 (EXIT) - KeyRoom.png에서 로드된 문 스프라이트 사용
+            sprite = getExitDoorSprite(x, y, map);
+        } else if (tile == '.' || tile == 'C' || tile == 'E' || tile == 'L') {
             // 바닥 - 랜덤 바닥 타일 (좌표 기반으로 일관성 유지)
-            // 'C' (상자) 위치도 바닥 타일로 렌더링 (상자는 나중에 오버레이)
+            // 'C' (상자), 'E' (적 스폰), 'L' (엘리트 스폰) 위치도 바닥 타일로 렌더링
+            // 상자와 몬스터는 나중에 오버레이
             sprite = TileSprites.getFloorTile(x, y);
         }
 
@@ -167,5 +171,30 @@ public class TileManager {
 
         // 기본 문 (위쪽)
         return TileSprites.getDoorTop();
+    }
+
+    /**
+     * EXIT 문의 위치에 따른 회전된 스프라이트 반환 (KeyRoom.png에서 로드)
+     */
+    private BufferedImage getExitDoorSprite(int x, int y, char[][] map) {
+        int width = map[0].length;
+        int height = map.length;
+
+        if (y == 0) {
+            // 위쪽 벽에 있는 EXIT 문
+            return TileSprites.getExitDoorTop();
+        } else if (y == height - 1) {
+            // 아래쪽 벽에 있는 EXIT 문
+            return TileSprites.getExitDoorBottom();
+        } else if (x == 0) {
+            // 왼쪽 벽에 있는 EXIT 문
+            return TileSprites.getExitDoorLeft();
+        } else if (x == width - 1) {
+            // 오른쪽 벽에 있는 EXIT 문
+            return TileSprites.getExitDoorRight();
+        }
+
+        // 기본 EXIT 문 (위쪽)
+        return TileSprites.getExitDoorTop();
     }
 }
