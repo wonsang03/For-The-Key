@@ -33,6 +33,9 @@ public class TileSprites {
     // 바닥 타일 (18번으로 고정)
     private static BufferedImage floorTile;
 
+    // 상자 타일 (82번)
+    private static BufferedImage chestTile;
+
     /**
      * 기본 스프라이트 시트 로드 (Stage 1)
      */
@@ -80,12 +83,16 @@ public class TileSprites {
             // 바닥 타일 (18번으로 고정)
             floorTile = getTileByIndex(18);
 
+            // 상자 타일 (82번)
+            chestTile = getTileByIndex(82);
+
             System.out.println("✓ Stage " + stageNumber + " 타일 스프라이트 로드 완료 (204x204)");
             System.out.println("  - 이미지: " + imagePath);
             System.out.println("  - 모서리: 좌상(0), 우상(5), 좌하(40), 우하(45)");
             System.out.println("  - 벽: 위(1-4), 아래(41-44), 좌(10,20,30), 우(15,25,35)");
             System.out.println("  - 문: 위(36), 아래(37), 좌(48), 우(47)");
             System.out.println("  - 바닥: 18번 고정");
+            System.out.println("  - 상자: 82번");
 
         } catch (IOException e) {
             System.err.println("✗ 스프라이트 시트 로드 실패: " + e.getMessage());
@@ -164,6 +171,13 @@ public class TileSprites {
      */
     public static BufferedImage getFloorTile(int x, int y) {
         return floorTile;
+    }
+
+    /**
+     * 상자 타일 반환 (82번)
+     */
+    public static BufferedImage getChestTile() {
+        return chestTile;
     }
 
     public static boolean isLoaded() {

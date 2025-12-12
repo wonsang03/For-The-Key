@@ -23,6 +23,7 @@ public class Minimap {
     // 색상 설정
     private static final Color CURRENT_ROOM_COLOR = new Color(100, 200, 255);  // 현재 방 (밝은 파랑)
     private static final Color VISITED_ROOM_COLOR = new Color(150, 150, 150);  // 방문한 방 (회색)
+    private static final Color KEY_ROOM_COLOR = new Color(255, 215, 0);        // 열쇠 방 (금색)
     private static final Color CONNECTION_COLOR = new Color(100, 100, 100);     // 연결선 (어두운 회색)
     private static final Color BORDER_COLOR = new Color(200, 200, 200);         // 테두리
 
@@ -98,9 +99,9 @@ public class Minimap {
      * @param currentRoomId 현재 플레이어가 있는 방 ID
      */
     public void render(Graphics2D g2, int currentRoomId) {
-        // 미니맵 위치 (오른쪽 상단)
+        // 미니맵 위치 (오른쪽 하단)
         int minimapX = Constants.WINDOW_WIDTH - MINIMAP_PADDING - (ROOM_SIZE + ROOM_SPACING) * 5;
-        int minimapY = MINIMAP_PADDING;
+        int minimapY = Constants.WINDOW_HEIGHT - MINIMAP_PADDING - (ROOM_SIZE + ROOM_SPACING) * 5;
 
         // 먼저 연결선 그리기 (방 아래에 표시)
         renderConnections(g2, minimapX, minimapY);
@@ -185,9 +186,15 @@ public class Minimap {
         // 현재 방인지 확인
         boolean isCurrent = (roomId == currentRoomId);
 
+        // 방 타입 확인
+        RoomData roomData = MapLoader.getRoom(roomId);
+        String roomType = (roomData != null) ? roomData.getRoomType() : "NORMAL";
+
         // 방 채우기
         if (isCurrent) {
             g2.setColor(CURRENT_ROOM_COLOR);
+        } else if ("KEY".equals(roomType)) {
+            g2.setColor(KEY_ROOM_COLOR);
         } else {
             g2.setColor(VISITED_ROOM_COLOR);
         }

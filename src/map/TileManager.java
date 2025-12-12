@@ -19,24 +19,31 @@ public class TileManager {
     }
 
     /**
-     * 맵을 화면에 렌더링
+     * 맵을 화면에 렌더링 (가변 크기 지원)
      * @param g2 Graphics2D 객체
-     * @param map 20x12 크기의 맵 데이터
+     * @param map 가변 크기의 맵 데이터
      */
     public void render(Graphics2D g2, char[][] map) {
-        if (map == null) {
+        if (map == null || map.length == 0) {
             return;
         }
 
         int tileSize = Constants.TILE_SIZE;
+        int height = map.length;
+        int width = map[0].length;
 
-        for (int y = 0; y < 12; y++) {
-            for (int x = 0; x < 20; x++) {
+        // 맵을 화면 중앙에 배치하기 위한 오프셋 계산
+        int offsetX = (Constants.WINDOW_WIDTH - (width * tileSize)) / 2;
+        int offsetY = (Constants.WINDOW_HEIGHT - (height * tileSize)) / 2;
+
+        // 1단계: 기본 타일 렌더링 (벽, 바닥, 문 등)
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
                 char tile = map[y][x];
                 TileType tileType = TileType.fromSymbol(tile);
 
-                int screenX = x * tileSize;
-                int screenY = y * tileSize;
+                int screenX = offsetX + (x * tileSize);
+                int screenY = offsetY + (y * tileSize);
 
                 if (useSprites) {
                     // 스프라이트 사용
@@ -45,6 +52,23 @@ public class TileManager {
                     // 색상만 사용 (폴백)
                     g2.setColor(tileType.getColor());
                     g2.fillRect(screenX, screenY, tileSize, tileSize);
+                }
+            }
+        }
+
+        // 2단계: 오버레이 렌더링 (상자 등)
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                char tile = map[y][x];
+                int screenX = offsetX + (x * tileSize);
+                int screenY = offsetY + (y * tileSize);
+
+                // 상자 타일 (C)인 경우 바닥 위에 상자 렌더링
+                if (tile == 'C' && useSprites) {
+                    BufferedImage chestSprite = TileSprites.getChestTile();
+                    if (chestSprite != null) {
+                        g2.drawImage(chestSprite, screenX, screenY, tileSize, tileSize, null);
+                    }
                 }
             }
         }
@@ -63,8 +87,9 @@ public class TileManager {
         } else if (tile == 'D' || tile == 'E') {
             // 문 또는 출구 - 위치에 따라 회전된 문 스프라이트 사용
             sprite = getDoorSprite(x, y, map);
-        } else if (tile == '.') {
+        } else if (tile == '.' || tile == 'C') {
             // 바닥 - 랜덤 바닥 타일 (좌표 기반으로 일관성 유지)
+            // 'C' (상자) 위치도 바닥 타일로 렌더링 (상자는 나중에 오버레이)
             sprite = TileSprites.getFloorTile(x, y);
         }
 

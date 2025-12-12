@@ -43,6 +43,7 @@ public class MapLoader {
                     new FileInputStream(file), "UTF-8"))) {
                 String line;
                 Integer currentRoomId = null;
+                String currentRoomType = "NORMAL";
                 List<String> mapLines = new ArrayList<>();
                 List<String[]> connections = new ArrayList<>();
 
@@ -56,12 +57,13 @@ public class MapLoader {
                     if (line.startsWith("@ROOM")) {
                         // 이전 방 저장
                         if (currentRoomId != null) {
-                            saveRoom(currentRoomId, mapLines, connections);
+                            saveRoom(currentRoomId, mapLines, connections, currentRoomType);
                         }
 
                         // 새 방 시작
                         String[] parts = line.split("\\s+");
                         currentRoomId = Integer.parseInt(parts[1]);
+                        currentRoomType = parts.length >= 3 ? parts[2] : "NORMAL";
                         mapLines.clear();
                         connections.clear();
                     }
@@ -84,7 +86,7 @@ public class MapLoader {
 
                 // 마지막 방 저장
                 if (currentRoomId != null) {
-                    saveRoom(currentRoomId, mapLines, connections);
+                    saveRoom(currentRoomId, mapLines, connections, currentRoomType);
                 }
 
                 System.out.println("총 " + roomCache.size() + "개의 방이 로드되었습니다.");
@@ -96,31 +98,37 @@ public class MapLoader {
     }
 
     /**
-     * 방 데이터를 RoomData 객체로 변환하여 저장
+     * 방 데이터를 RoomData 객체로 변환하여 저장 (가변 크기 지원)
      */
-    private static void saveRoom(int roomId, List<String> mapLines, List<String[]> connections) {
-        char[][] map = new char[12][20];
+    private static void saveRoom(int roomId, List<String> mapLines, List<String[]> connections, String roomType) {
+        if (mapLines.isEmpty()) {
+            System.err.println("Room " + roomId + ": 맵 데이터가 없습니다.");
+            return;
+        }
+
+        // 실제 맵 크기 계산
+        int height = mapLines.size();
+        int width = 0;
+        for (String line : mapLines) {
+            width = Math.max(width, line.length());
+        }
+
+        // 가변 크기 배열 생성
+        char[][] map = new char[height][width];
 
         // 맵 데이터 변환
-        for (int y = 0; y < 12 && y < mapLines.size(); y++) {
+        for (int y = 0; y < height; y++) {
             String mapLine = mapLines.get(y);
-            for (int x = 0; x < 20 && x < mapLine.length(); x++) {
-                map[y][x] = mapLine.charAt(x);
-            }
-            // 부족한 부분은 바닥으로 채움
-            for (int x = mapLine.length(); x < 20; x++) {
-                map[y][x] = '.';
-            }
-        }
-
-        // 부족한 줄은 바닥으로 채움
-        for (int y = mapLines.size(); y < 12; y++) {
-            for (int x = 0; x < 20; x++) {
-                map[y][x] = '.';
+            for (int x = 0; x < width; x++) {
+                if (x < mapLine.length()) {
+                    map[y][x] = mapLine.charAt(x);
+                } else {
+                    map[y][x] = '.';  // 부족한 부분은 바닥
+                }
             }
         }
 
-        RoomData roomData = new RoomData(roomId, map);
+        RoomData roomData = new RoomData(roomId, map, roomType);
 
         // 연결 정보 추가
         for (String[] conn : connections) {
@@ -130,6 +138,8 @@ public class MapLoader {
         }
 
         roomCache.put(roomId, roomData);
+
+        System.out.println("  Room " + roomId + " 로드됨: " + width + "x" + height);
     }
 
     /**
