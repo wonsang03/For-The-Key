@@ -21,9 +21,11 @@ public class Enemy {
     private double speed;
     private int attackRange;
     private int moveRange; 
-    public double x, y;
-    public int hitWidth;
-    public int hitHeight;
+    public double x, y; // 월드 좌표
+    public int hitWidth;  // 히트박스(충돌) 너비
+    public int hitHeight; // 히트박스(충돌) 높이
+    
+    // 드로잉 크기 필드 (수동 설정용)
     public int drawWidth;
     public int drawHeight;
     public boolean alive = true;
@@ -54,10 +56,8 @@ public class Enemy {
     private int lastPlayerX = 0;
     private int lastPlayerY = 0;
 
-    // ========== 생성자 ==========
-    // 적 생성자: 타입별 스탯 및 크기 설정 후 스프라이트 이미지 로드
+    // 생성자
     public Enemy(EnemyType type, double startX, double startY) {
-        // 기본 정보 설정
         this.type = type;
         this.x = startX;
         this.y = startY;
@@ -66,15 +66,13 @@ public class Enemy {
         this.hp = this.maxHp;
         this.speed = type.getSpeed();
         
-        // 기본값 설정 (타입별로 switch문에서 덮어씀)
+        // 기본값 설정
         this.attackRange = 300; 
         this.moveRange = 600; 
         this.hitWidth = 48; 
         this.hitHeight = 48; 
         this.drawWidth = 48; 
         this.drawHeight = 48;
-        
-        // 타입별 스탯 및 크기 설정
         switch (type) {
             case SLIME:
                 this.attackRange = 100;
@@ -235,7 +233,7 @@ public class Enemy {
                 this.drawHeight = 150;
                 break;
             case BOMB_SKULL:
-                this.attackRange = 200;
+                this.attackRange = 100;
                 this.moveRange = 500;
                 this.hitWidth = 90; 
                 this.hitHeight = 70;
@@ -257,23 +255,20 @@ public class Enemy {
         loadImage(); 
     }
 
-    // ========== 이미지 처리 ==========
-    // 이미지를 ARGB 형식으로 변환 (투명도 처리용)
+    // 이미지 처리
     private BufferedImage ensureARGB(BufferedImage sheet) {
-        // ARGB 형식의 새 이미지 생성 (투명도 처리용)
         BufferedImage newSheet = new BufferedImage(
             sheet.getWidth(), 
             sheet.getHeight(), 
             BufferedImage.TYPE_INT_ARGB 
         );
-        // 원본 이미지를 새 이미지에 복사
         Graphics2D g2 = newSheet.createGraphics();
         g2.drawImage(sheet, 0, 0, null);
         g2.dispose();
         return newSheet;
     }
     
-    // 적 타입별 스프라이트 이미지 로드
+    // 스프라이트 이미지 로드
     private void loadImage() {
         try {
             if (type == EnemyType.SLIME) {
@@ -391,7 +386,8 @@ public class Enemy {
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state, boolean... useBlackRemoval) throws IOException {
         try {
             // 스프라이트 시트 파일 읽기
-            BufferedImage sheet = ImageIO.read(new File("res/" + fileName));
+            File imageFile = new File("res/" + fileName);
+            BufferedImage sheet = ImageIO.read(imageFile);
             if (sheet == null) {
                 return;
             }
@@ -480,37 +476,28 @@ public class Enemy {
     }
     
     // ========== 데미지 및 상태 관리 ==========
-    // 데미지 받기: HP 차감 후 사망 처리
+    // 자폭 플래그 (BOMB_SKULL 전용 - 공격 애니메이션 끝나면 자폭)
+    public boolean shouldExplode = false;
+    
     public void takeDamage(int damage) {
-        // 이미 사망한 적은 데미지를 받지 않음
         if (!alive) return;
-        
-        // HP 차감
         hp -= damage;
-        
-        // HP가 0 이하가 되면 사망 처리
         if (hp <= 0) {
             hp = 0;
             alive = false;
         }
     }
     
-    // 사망 여부 확인
     public boolean isDead() {
         return !alive || hp <= 0;
     }
     
-    // ========== AI 업데이트 ==========
-    // 적 AI 업데이트: 플레이어 추적, 상태 전환, 애니메이션 처리
+    // AI 업데이트
     public void update(int targetX, int targetY) {
-        // 사망한 적은 업데이트하지 않음
         if (!alive) return;
         
-        // 플레이어 위치 저장 (부채꼴 히트박스 표시용)
         lastPlayerX = targetX;
         lastPlayerY = targetY;
-
-        // 적 중심 좌표 계산 (월드 좌표)
         double drawY_world = this.y - (this.hitHeight - 48);
         double enemyCenterX = this.x + (this.drawWidth / 2.0);
         double enemyCenterY = drawY_world + (this.drawHeight / 2.0);
@@ -520,74 +507,50 @@ public class Enemy {
         double dy = targetY - enemyCenterY;
         double distance = Math.sqrt(dx*dx + dy*dy);
 
-        // 스프라이트 방향 전환 (플레이어를 향한 방향)
+        // 스프라이트 방향 전환
         double flipDx = targetX - this.x;
         if (this.spriteDefaultFacesLeft) {
-            // 기본이 왼쪽을 보는 경우: 플레이어가 오른쪽에 있으면 반전
-            if (flipDx > 0) flip = true;
-            else flip = false;
+            flip = flipDx > 0;
         } else {
-            // 기본이 오른쪽을 보는 경우: 플레이어가 왼쪽에 있으면 반전
-            if (flipDx > 0) flip = false;
-            else flip = true;
+            flip = flipDx <= 0;
         }
 
-        // 공격 애니메이션 존재 여부 확인
         boolean hasAttackAnimation = (sprites != null && 
                                      sprites[ATTACK] != null && 
                                      sprites[ATTACK].length > 0);
-        
-        // 원거리 몬스터 여부 확인
-        boolean isRanged = (type == EnemyType.GOBLIN ||
-                           type == EnemyType.SPORE_FLOWER || 
+        boolean isRanged = (type == EnemyType.SPORE_FLOWER || 
                            type == EnemyType.FIRE_IMP || 
                            type == EnemyType.SNOW_MAGE);
         
-        // 공격 애니메이션 진행 중인 경우
         if (attackAnimationInProgress && hasAttackAnimation) {
-            // 원거리 몬스터는 공격 범위 내에 있으면 투사체 생성
             if (distance <= attackRange && isRanged) {
                 createProjectileIfNeeded(targetX, targetY);
             }
-        }
-        // 공격 애니메이션이 진행 중이 아닌 경우
-        else {
-            // 공격 범위 내에 있는 경우
+        } else {
             if (distance <= attackRange) { 
-                // 공격 상태로 전환 (새로운 공격 시작)
                 if (currentState != ATTACK || (currentState == ATTACK && !attackAnimationInProgress)) {
                     currentState = ATTACK;
                     spriteNum = 0; 
                     spriteCounter = 0;
                     projectileCreated = false;
                     meleeAttackApplied = false;
-                    // 공격 애니메이션이 있으면 진행 시작, 없어도 원거리는 투사체 발사를 위해 진행 시작
                     if (hasAttackAnimation) {
                         attackAnimationInProgress = true;
                     } else if (isRanged) {
                         attackAnimationInProgress = true;
                     }
                 }
-                
-                // 원거리 몬스터는 투사체 생성
                 createProjectileIfNeeded(targetX, targetY);
-            }
-            // 이동 범위 내에 있는 경우
-            else if (distance <= moveRange) { 
-                // 이동 상태로 전환
+            } else if (distance <= moveRange) { 
                 if (currentState != MOVE) {
                     currentState = MOVE;
                     spriteNum = 0; 
                 }
-                // 고정 모드가 아니면 플레이어를 향해 이동
                 if (!isFixed) {
                     this.x += (dx / distance) * speed; 
                     this.y += (dy / distance) * speed;
                 }
-            }
-            // 범위 밖에 있는 경우
-            else {
-                // 대기 상태로 전환
+            } else {
                 if (currentState != IDLE) {
                     currentState = IDLE;
                     spriteNum = 0; 
@@ -616,6 +579,10 @@ public class Enemy {
                         attackAnimationInProgress = false;
                         projectileCreated = false;
                         meleeAttackApplied = false;
+                        
+                        if (type == EnemyType.BOMB_SKULL) {
+                            shouldExplode = true;
+                        }
                     }
                 }
                 spriteCounter = 0;
@@ -630,6 +597,10 @@ public class Enemy {
                 projectileCreated = false;
                 meleeAttackApplied = false;
                 spriteCounter = 0;
+                
+                if (type == EnemyType.BOMB_SKULL) {
+                    shouldExplode = true;
+                }
             }
         }
         
@@ -638,46 +609,34 @@ public class Enemy {
     }
     
     // ========== 투사체 관리 ==========
-    // 투사체 생성: 공격 모션 중간 프레임에서 발사 (원거리 몬스터)
+    // 투사체 생성
     private void createProjectileIfNeeded(int targetX, int targetY) {
-        // 원거리가 아니면 투사체 생성하지 않음
         if (!isRanged()) return;
-        // 공격 상태가 아니면 생성하지 않음
         if (currentState != ATTACK) return;
-        // 공격 애니메이션이 진행 중이 아니면 생성하지 않음
         if (!attackAnimationInProgress) return;
-        // 이미 투사체를 생성했으면 생성하지 않음
         if (projectileCreated) return;
         
-        // 투사체 생성 시점 확인
         boolean shouldCreate = false;
         if (sprites != null && sprites[ATTACK] != null && sprites[ATTACK].length > 0) {
-            // 공격 애니메이션이 있으면 절반 프레임에서 발사
             int totalFrames = sprites[ATTACK].length;
             int projectileFrame = totalFrames / 2;
             if (spriteNum >= projectileFrame) {
                 shouldCreate = true;
             }
         } else {
-            // 공격 애니메이션이 없으면 즉시 발사
             shouldCreate = true;
         }
         
-        // 투사체 생성
         if (shouldCreate) {
-            // 적 중심 좌표 계산
             double drawY_world = this.y - (this.hitHeight - 48);
             double enemyCenterX = this.x + (this.drawWidth / 2.0);
             double enemyCenterY = drawY_world + (this.drawHeight / 2.0);
-            
-            // 투사체 속성 설정
             double projectileSpeed = 7.0;
             int projectileDamage = type.getAttack();
             double projectileRange = attackRange * 2.0;
             int projWidth = 16;
             int projHeight = 16;
             
-            // 투사체 생성 및 리스트에 추가
             projectiles.add(new SlimeProjectile(
                 enemyCenterX, enemyCenterY,
                 targetX, targetY,
@@ -686,17 +645,15 @@ public class Enemy {
                 projectileRange,
                 projWidth,
                 projHeight,
-                true // 원거리 투사체
+                true
             ));
             
-            // 투사체 생성 플래그 설정 (한 번만 생성)
             projectileCreated = true;
         }
     }
     
-    // 투사체 업데이트 및 비활성화된 투사체 제거
+    // 투사체 업데이트
     private void updateProjectiles() {
-        // 모든 투사체 업데이트 및 비활성화된 투사체 제거
         projectiles.removeIf(p -> {
             p.update();
             return !p.isActive();
@@ -779,17 +736,14 @@ public class Enemy {
     public int getAttackDamage() {
         return type.getAttack();
     }
-
-    // ========== 헬퍼 메서드 ==========
-    // 원거리 몬스터 여부 확인
+    
+    // 헬퍼 메서드
     private boolean isRanged() {
-        return (type == EnemyType.GOBLIN ||
-                type == EnemyType.SPORE_FLOWER || 
+        return (type == EnemyType.SPORE_FLOWER || 
                 type == EnemyType.FIRE_IMP || 
                 type == EnemyType.SNOW_MAGE);
     }
     
-    // 공격 모션 절반 프레임 여부 확인
     private boolean isHalfFrame() {
         if (sprites == null || sprites[ATTACK] == null || sprites[ATTACK].length == 0) {
             return true;
@@ -799,8 +753,7 @@ public class Enemy {
         return (spriteNum >= halfFrame && spriteNum <= halfFrame + 1);
     }
 
-    // ========== 렌더링 ==========
-    // 적 렌더링: 스프라이트, 히트박스, 공격 범위, HP바, 이름 표시
+    // 렌더링
     public void draw(Graphics2D g2, int cameraX, int cameraY) {
         // 사망한 적은 그리지 않음
         if (!alive) return;
@@ -857,8 +810,24 @@ public class Enemy {
             
             // 히트박스 표시 시점
             if (shouldShowHitbox) {
-                // 근거리 몬스터만 부채꼴 히트박스 표시
-                if (!isRanged()) {
+                if (type == EnemyType.BOMB_SKULL) {
+                    int explosionRange = 200;
+                    g2.setColor(new Color(255, 165, 0, 120));
+                    g2.fillOval(
+                        (int)(spriteCenterX - explosionRange),
+                        (int)(spriteCenterY - explosionRange),
+                        explosionRange * 2,
+                        explosionRange * 2
+                    );
+                    g2.setColor(new Color(255, 140, 0));
+                    g2.setStroke(new BasicStroke(3.0f));
+                    g2.drawOval(
+                        (int)(spriteCenterX - explosionRange),
+                        (int)(spriteCenterY - explosionRange),
+                        explosionRange * 2,
+                        explosionRange * 2
+                    );
+                } else if (!isRanged()) {
                     int attackRangeRadius = attackRange;
                     
                     // 월드 좌표로 적 중심 계산
