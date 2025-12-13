@@ -1,42 +1,22 @@
-package common; // 모든 파일이 이 패키지 이름을 씁니다.
+package common;
 
 public class Constants {
 
-    // === 윈도우 설정 ===
+    public static final String GAME_TITLE = "For the Key";
 
-    public static final String GAME_TITLE    = "For the Key";
+    public static final int TILE_SIZE = 64;
 
-    // 타일 크기 (64px)
-    public static final int TILE_SIZE        = 64;
+    public static final int MAX_SCREEN_COL = 20;
+    public static final int MAX_SCREEN_ROW = 12;
 
+    public static final int WINDOW_WIDTH = TILE_SIZE * MAX_SCREEN_COL;
+    public static final int WINDOW_HEIGHT = TILE_SIZE * MAX_SCREEN_ROW;
 
-    // 화면 크기 (가로 20칸 x 세로 12칸)
-
-    public static final int MAX_SCREEN_COL   = 20;
-    public static final int MAX_SCREEN_ROW   = 12;
-
+    public static final int MAX_WORLD_COL = 50; 
+    public static final int MAX_WORLD_ROW = 50; 
     
+    public static final int WORLD_WIDTH = TILE_SIZE * MAX_WORLD_COL; 
+    public static final int WORLD_HEIGHT = TILE_SIZE * MAX_WORLD_ROW;
 
-    // 실제 픽셀 크기 (1280 x 768)
-
-    public static final int WINDOW_WIDTH     = TILE_SIZE * MAX_SCREEN_COL;
-    public static final int WINDOW_HEIGHT    = TILE_SIZE * MAX_SCREEN_ROW;
-
-
-
-    // === 세계 지도 설정 ===
-
-    public static final int MAX_WORLD_COL    = 50; 
-    public static final int MAX_WORLD_ROW    = 50; 
-
-    
-    public static final int WORLD_WIDTH      = TILE_SIZE * MAX_WORLD_COL; 
-    public static final int WORLD_HEIGHT     = TILE_SIZE * MAX_WORLD_ROW;
-
-    
-
-    // 게임 속도
-
-    public static final int FPS              = 60;
-
+    public static final int FPS = 60;
 }

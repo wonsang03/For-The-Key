@@ -8,25 +8,21 @@ import java.awt.BasicStroke;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 미니맵 렌더링 클래스
- * 화면 오른쪽 상단에 방 구조를 표시
- */
+// [서충만님 코드] 미니맵 렌더링 클래스: 화면 오른쪽 상단에 방 구조를 표시
 public class Minimap {
 
-    // 미니맵 설정
-    private static final int MINIMAP_PADDING = 20;  // 화면 가장자리로부터의 여백
-    private static final int ROOM_SIZE = 30;         // 각 방의 크기
-    private static final int ROOM_SPACING = 10;      // 방 사이의 간격
-    private static final int CONNECTION_WIDTH = 4;   // 연결선 두께
+    private static final int MINIMAP_PADDING = 20;
+    private static final int ROOM_SIZE = 30;
+    private static final int ROOM_SPACING = 10;
+    private static final int CONNECTION_WIDTH = 4;
 
-    // 색상 설정
-    private static final Color CURRENT_ROOM_COLOR = new Color(100, 200, 255);  // 현재 방 (밝은 파랑)
-    private static final Color VISITED_ROOM_COLOR = new Color(150, 150, 150);  // 방문한 방 (회색)
-    private static final Color CONNECTION_COLOR = new Color(100, 100, 100);     // 연결선 (어두운 회색)
-    private static final Color BORDER_COLOR = new Color(200, 200, 200);         // 테두리
+    private static final Color CURRENT_ROOM_COLOR = new Color(100, 200, 255);
+    private static final Color VISITED_ROOM_COLOR = new Color(150, 150, 150);
+    private static final Color KEY_ROOM_COLOR = new Color(255, 215, 0);
+    private static final Color ELITE_ROOM_COLOR = new Color(220, 20, 60);
+    private static final Color CONNECTION_COLOR = new Color(100, 100, 100);
+    private static final Color BORDER_COLOR = new Color(200, 200, 200);
 
-    // 각 방의 위치를 저장 (roomId -> {x, y})
     private Map<Integer, int[]> roomPositions;
 
     public Minimap() {
@@ -34,15 +30,10 @@ public class Minimap {
         calculateRoomPositions();
     }
 
-    /**
-     * 각 방의 미니맵 상의 위치 계산 (MapLoader 데이터 기반)
-     * Room 0을 중심으로 상대적 위치를 자동 계산
-     */
+    // [서충만님 코드] 각 방의 미니맵 상의 위치 계산 (BFS 방식)
     private void calculateRoomPositions() {
-        // Room 0을 시작점으로 설정
         roomPositions.put(0, new int[]{2, 2});
 
-        // BFS 방식으로 연결된 방들의 위치 계산
         java.util.Queue<Integer> queue = new java.util.LinkedList<>();
         java.util.Set<Integer> visited = new java.util.HashSet<>();
 
@@ -57,14 +48,12 @@ public class Minimap {
 
             int[] currentPos = roomPositions.get(currentRoomId);
 
-            // 연결된 방들의 위치 계산
             for (java.util.Map.Entry<String, Integer> connection : currentRoom.getConnections().entrySet()) {
                 String direction = connection.getKey();
                 Integer nextRoomId = connection.getValue();
 
                 if (nextRoomId == null || visited.contains(nextRoomId)) continue;
 
-                // 방향에 따라 다음 방의 위치 계산
                 int[] nextPos = new int[2];
                 switch (direction) {
                     case "NORTH":
@@ -92,20 +81,13 @@ public class Minimap {
         }
     }
 
-    /**
-     * 미니맵 렌더링
-     * @param g2 Graphics2D 객체
-     * @param currentRoomId 현재 플레이어가 있는 방 ID
-     */
+    // [서충만님 코드] 미니맵 렌더링
     public void render(Graphics2D g2, int currentRoomId) {
-        // 미니맵 위치 (오른쪽 상단)
         int minimapX = Constants.WINDOW_WIDTH - MINIMAP_PADDING - (ROOM_SIZE + ROOM_SPACING) * 5;
-        int minimapY = MINIMAP_PADDING;
+        int minimapY = Constants.WINDOW_HEIGHT - MINIMAP_PADDING - (ROOM_SIZE + ROOM_SPACING) * 5;
 
-        // 먼저 연결선 그리기 (방 아래에 표시)
         renderConnections(g2, minimapX, minimapY);
 
-        // 방들 그리기
         for (Map.Entry<Integer, int[]> entry : roomPositions.entrySet()) {
             int roomId = entry.getKey();
             int[] gridPos = entry.getValue();
@@ -117,46 +99,36 @@ public class Minimap {
         }
     }
 
-    /**
-     * 방 사이의 연결선 렌더링 (MapLoader 데이터 기반)
-     */
+    // [서충만님 코드] 방 사이의 연결선 렌더링
     private void renderConnections(Graphics2D g2, int offsetX, int offsetY) {
         g2.setColor(CONNECTION_COLOR);
         g2.setStroke(new BasicStroke(CONNECTION_WIDTH));
 
-        // 이미 그린 연결선 추적 (중복 방지)
         java.util.Set<String> drawnConnections = new java.util.HashSet<>();
 
-        // 모든 방의 연결 정보를 순회하며 연결선 그리기
         for (Map.Entry<Integer, int[]> entry : roomPositions.entrySet()) {
             int roomId = entry.getKey();
             RoomData room = MapLoader.getRoom(roomId);
 
             if (room == null) continue;
 
-            // 각 방의 연결된 방향을 확인
             for (Map.Entry<String, Integer> connection : room.getConnections().entrySet()) {
                 String direction = connection.getKey();
                 Integer connectedRoomId = connection.getValue();
 
                 if (connectedRoomId == null) continue;
 
-                // 연결선 ID 생성 (작은 번호를 앞에 배치하여 중복 방지)
                 String connectionId = Math.min(roomId, connectedRoomId) + "-" + Math.max(roomId, connectedRoomId);
 
-                // 이미 그린 연결선이면 스킵
                 if (drawnConnections.contains(connectionId)) continue;
 
-                // 연결선 그리기
                 drawConnection(g2, offsetX, offsetY, roomId, connectedRoomId, direction);
                 drawnConnections.add(connectionId);
             }
         }
     }
 
-    /**
-     * 두 방 사이의 연결선 그리기
-     */
+    // [서충만님 코드] 두 방 사이의 연결선 그리기
     private void drawConnection(Graphics2D g2, int offsetX, int offsetY,
                                 int fromRoom, int toRoom, String direction) {
         int[] fromPos = roomPositions.get(fromRoom);
@@ -170,35 +142,34 @@ public class Minimap {
         int toY = offsetY + toPos[1] * (ROOM_SIZE + ROOM_SPACING) + ROOM_SIZE / 2;
 
         if (direction.equals("SOUTH") || direction.equals("NORTH")) {
-            // 세로 연결
             g2.drawLine(fromX, fromY, fromX, toY);
         } else {
-            // 가로 연결
             g2.drawLine(fromX, fromY, toX, fromY);
         }
     }
 
-    /**
-     * 개별 방 렌더링
-     */
+    // [서충만님 코드] 개별 방 렌더링
     private void renderRoom(Graphics2D g2, int x, int y, int roomId, int currentRoomId) {
-        // 현재 방인지 확인
         boolean isCurrent = (roomId == currentRoomId);
 
-        // 방 채우기
+        RoomData roomData = MapLoader.getRoom(roomId);
+        String roomType = (roomData != null) ? roomData.getRoomType() : "NORMAL";
+
         if (isCurrent) {
             g2.setColor(CURRENT_ROOM_COLOR);
+        } else if ("KEY".equals(roomType)) {
+            g2.setColor(KEY_ROOM_COLOR);
+        } else if ("ELITE".equals(roomType)) {
+            g2.setColor(ELITE_ROOM_COLOR);
         } else {
             g2.setColor(VISITED_ROOM_COLOR);
         }
         g2.fillRect(x, y, ROOM_SIZE, ROOM_SIZE);
 
-        // 방 테두리
         g2.setColor(BORDER_COLOR);
         g2.setStroke(new BasicStroke(2));
         g2.drawRect(x, y, ROOM_SIZE, ROOM_SIZE);
 
-        // 방 번호 표시 (선택사항)
         if (isCurrent) {
             g2.setColor(Color.WHITE);
             g2.drawString(String.valueOf(roomId), x + ROOM_SIZE / 2 - 5, y + ROOM_SIZE / 2 + 5);

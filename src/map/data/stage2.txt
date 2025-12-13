@@ -1,25 +1,20 @@
 # ========================================
 # Stage 2: The Verdant Forest (숲)
 # ========================================
-# 모든 방은 20x12 크기로 고정 (20 cols x 12 rows)
-# 문(D)은 벽 중간에 배치, 연결된 방끼리 위치 일치
-#
 # 방 구조:
-#   [Room 0: START] → [Room 1: NORMAL]
-#         ↓                   ↓
-#   [Room 2: NORMAL] → [Room 3: KEY]
+#   [Room 0: START] → [Room 1: NORMAL] → [Room 2: KEY]
 #                            ↓
-#                      [Room 4: EXIT]
+#                       [Room 3: KEY]
+#                            ↓
+#                       [Room 4: EXIT]
 # ========================================
 
 @STAGE 2
 
 # Room 0: START (시작 방 - 숲 입구)
-# 연결: EAST → Room 1 (우측 중앙에 문)
-#       SOUTH → Room 2 (하단 중앙에 문)
-@ROOM 0
+# 연결: EAST → Room 1
+@ROOM 0 START
 @CONNECT EAST 1
-@CONNECT SOUTH 2
 WWWWWWWWWWWWWWWWWWWW
 W..................W
 W..................W
@@ -31,71 +26,65 @@ W..................W
 W..................W
 W..................W
 W..................W
-WWWWWWWWWDWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW
 
 # Room 1: NORMAL (일반 전투 방 - 숲 속)
-# 연결: WEST → Room 0 (좌측 중앙에 문)
-#       SOUTH → Room 3 (하단 중앙에 문)
-@ROOM 1
+# 연결: WEST → Room 0, EAST → Room 2, SOUTH → Room 3
+@ROOM 1 NORMAL
 @CONNECT WEST 0
+@CONNECT EAST 2
 @CONNECT SOUTH 3
 WWWWWWWWWWWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
+W......E...........W
+D.........C........D
+W......E...........W
 W..................W
-W..................W
-D..................W
-W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
-# Room 2: NORMAL (일반 전투 방 - 숲 속)
-# 연결: NORTH → Room 0 (상단 중앙에 문)
-#       EAST → Room 3 (우측 중앙에 문)
-@ROOM 2
-@CONNECT NORTH 0
-@CONNECT EAST 3
-WWWWWWWWWDWWWWWWWWWW
+# Room 2: KEY (열쇠 방 1 - 20x12)
+# 연결: WEST → Room 1
+@ROOM 2 KEY
+@CONNECT WEST 1
+WWWWWWWWWWWWWWWWWWWW
+W..................W
+W....E.......E.....W
 W..................W
 W..................W
+W......E...........W
+D..................W
+W......E...........W
 W..................W
-W..................W
-W..................W
-W..................D
-W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWWWWWWWWWWWW
 
-# Room 3: KEY (열쇠 방 - 숲의 중심)
-# 연결: NORTH → Room 1 (상단 중앙에 문)
-#       WEST → Room 2 (좌측 중앙에 문)
-#       SOUTH → Room 4 (하단 중앙에 문)
-@ROOM 3
+# Room 3: KEY (열쇠 방 2 - 20x12)
+# 연결: NORTH → Room 1, SOUTH → Room 4
+@ROOM 3 KEY
 @CONNECT NORTH 1
-@CONNECT WEST 2
 @CONNECT SOUTH 4
 WWWWWWWWWDWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
+W......E...........W
 W..................W
+W......E...........W
 W..................W
-D..................W
-W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
 # Room 4: EXIT (다음 스테이지 - 숲의 출구)
-# 연결: NORTH → Room 3 (상단 중앙에 문)
-# EXIT 타일(E)은 중앙에 배치
-@ROOM 4
+# 연결: NORTH → Room 3
+@ROOM 4 NORMAL
 @CONNECT NORTH 3
 WWWWWWWWWDWWWWWWWWWW
 W..................W
@@ -106,6 +95,6 @@ W..................W
 W..................W
 W..................W
 W..................W
-W........E.........W
+W........X.........W
 W..................W
 WWWWWWWWWWWWWWWWWWWW

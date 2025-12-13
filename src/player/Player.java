@@ -14,45 +14,38 @@ public class Player extends Entity {
     GamePanel gp;
     KeyHandler keyH;
     
-    // 이미지를 담을 2차원 배열 [열(방향)][행(동작)]
     BufferedImage[][] animations;
     int totalFrames = 4;
     
-    // [추가] 스탯 시스템: 아이템 효과 적용을 위한 필드 추가
+    // [김선욱님 코드] 스탯 시스템: 아이템 효과 적용을 위한 필드 추가
     private int maxHP = 100;
     private int hp = 100;
-    private double attackMultiplier = 1.0;  // 공격력 배수
-    private double attackSpeedBonus = 0.0;  // 공격속도 보너스
-    private double baseSpeed = 4.0;        // 기본 이동속도 (아이템으로 변경 가능하도록)
+    private double attackMultiplier = 1.0;
+    private double attackSpeedBonus = 0.0;
+    private double baseSpeed = 4.0;
 
     public Player(GamePanel gp, KeyHandler keyH) {
         this.gp = gp;
         this.keyH = keyH;
         
         setDefaultValues();
-        getPlayerImage();   // 이미지 로딩 및 자르기
+        getPlayerImage();
     }
 
     public void setDefaultValues() {
-    	// 시작 위치 및 속도 설정
-    	x = Constants.TILE_SIZE * 5; // 임시 시작 위치
+        x = Constants.TILE_SIZE * 5;
         y = Constants.TILE_SIZE * 5;
-        
-        // [변경] speed = 4 → speed = (int)baseSpeed: 아이템으로 속도 변경 가능하도록 수정
-        speed = (int)baseSpeed; // 이동 속도
-        direction = "down"; // 처음엔 아래를 봄
-        spriteNum = 0; // 0번 프레임부터 시작
+        speed = (int)baseSpeed;
+        direction = "down";
+        spriteNum = 0;
     }
     
     public void getPlayerImage() {
         try {
-        	// [변경] 이미지 로딩 방식 변경: 프로젝트 루트 기준 경로 사용
             java.io.File file = new java.io.File("res/player.png");
             
             if (!file.exists()) {
                 System.err.println("경고: 플레이어 이미지 파일을 찾을 수 없습니다: " + file.getAbsolutePath());
-                System.err.println("플레이어 이미지가 표시되지 않을 수 있습니다.");
-                // 빈 이미지 배열 초기화 (NullPointerException 방지)
                 animations = new BufferedImage[3][totalFrames];
                 return;
             }
@@ -64,17 +57,14 @@ public class Player extends Entity {
                 animations = new BufferedImage[3][totalFrames];
                 return;
             }
-        	
-            // 배열 크기: [3열(방향)][4행(동작)]
+            
             animations = new BufferedImage[3][totalFrames];
 
-            int width = spriteSheet.getWidth() / 3;             // 전체 너비 / 3칸
-            int height = spriteSheet.getHeight() / totalFrames; // 전체 높이 / 4칸
+            int width = spriteSheet.getWidth() / 3;
+            int height = spriteSheet.getHeight() / totalFrames;
 
-            // 열(Col)을 기준으로 먼저 돕니다.
             for (int col = 0; col < 3; col++) {
                 for (int row = 0; row < totalFrames; row++) {
-                    // animations[방향칸][동작줄] 에 저장
                     animations[col][row] = spriteSheet.getSubimage(col * width, row * height, width, height);
                 }
             }
@@ -82,9 +72,8 @@ public class Player extends Entity {
             System.out.println("플레이어 이미지 로드 성공: " + file.getAbsolutePath());
             
         } catch (IOException e) {
-        	e.printStackTrace();
+            e.printStackTrace();
             System.err.println("이미지 로드 실패! res/player.png 파일을 확인하세요.");
-            // 빈 이미지 배열 초기화 (NullPointerException 방지)
             animations = new BufferedImage[3][totalFrames];
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,13 +84,10 @@ public class Player extends Entity {
 
     @Override
     public void update() {
-        // 움직임 상태 확인용 변수
         boolean isMoving = false;
         int moveX = 0;
         int moveY = 0;
 
-        // [변경] 대각선 이동 추가: if-else if → 독립적인 if문으로 변경하여 동시 입력 가능
-        // 키 입력에 따른 이동 (대각선 이동 가능)
         if (keyH.upPressed) {
             moveY -= speed;
             isMoving = true;
@@ -119,46 +105,39 @@ public class Player extends Entity {
             isMoving = true;
         }
 
-        // [추가] 대각선 이동 시 속도 정규화: 대각선 이동이 더 빠르지 않도록 √2로 나눔
+        // 대각선 이동 시 속도 정규화
         if (moveX != 0 && moveY != 0) {
-            // 대각선 이동 시 속도를 √2로 나눔 (약 0.707)
             double diagonalSpeed = speed / Math.sqrt(2.0);
             moveX = (int)(moveX * (diagonalSpeed / speed));
             moveY = (int)(moveY * (diagonalSpeed / speed));
         }
 
-        // 실제 이동 적용
         x += moveX;
         y += moveY;
 
-        // [변경] 방향 설정 로직 변경: 수직 방향 우선, 수평 방향 차순으로 설정
         if (isMoving) {
-            // 수직 방향 우선
             if (moveY < 0) {
                 direction = "up";
             } else if (moveY > 0) {
                 direction = "down";
-            } 
-            // 수평 방향
-            else if (moveX < 0) {
+            } else if (moveX < 0) {
                 direction = "left";
             } else if (moveX > 0) {
                 direction = "right";
             }
         }
 
-        // 애니메이션 로직 (세로 4프레임을 순환)
         if (isMoving) {
             spriteCounter++;
-            if (spriteCounter > 8) { // 속도 조절 (숫자가 크면 느려짐)
-                spriteNum++; // 다음 동작 프레임으로
-                if (spriteNum >= totalFrames) { // 끝까지 가면 다시 0번으로
+            if (spriteCounter > 8) {
+                spriteNum++;
+                if (spriteNum >= totalFrames) {
                     spriteNum = 0;
                 }
                 spriteCounter = 0;
             }
         } else {
-            spriteNum = 0; // 멈추면 가장 첫 번째 동작(보통 서 있는 자세) 보여줌
+            spriteNum = 0;
         }
     }
 
@@ -166,31 +145,25 @@ public class Player extends Entity {
     public void draw(Graphics2D g2) {
         BufferedImage image = null;
 
-        // 방향에 따라 몇 번째 '세로줄(열, Column)'을 쓸지 결정
         int colDir = 0; 
-        // [추가] 왼쪽 방향 이미지 반전을 위한 플래그
-        boolean flipHorizontal = false; // 왼쪽일 때 이미지 반전 여부
+        boolean flipHorizontal = false;
         
         switch (direction) {
-        case "down":  colDir = 0; break; // 1번째 세로줄: 정면
-        case "up":    colDir = 1; break; // 2번째 세로줄: 뒷면
-        case "right": colDir = 2; break; // 3번째 세로줄: 옆면(오른쪽)
+        case "down":  colDir = 0; break;
+        case "up":    colDir = 1; break;
+        case "right": colDir = 2; break;
         case "left":  
-            colDir = 2; // 오른쪽 이미지를 사용
-            flipHorizontal = true; // 왼쪽이므로 반전 필요
+            colDir = 2;
+            flipHorizontal = true;
             break; 
         }
 
-        // 현재 애니메이션 순서에 따라 몇 번째 '가로줄(행, Row)'을 쓸지 결정
-        int rowFrame = spriteNum; // 0 ~ 3 사이의 숫자
+        int rowFrame = spriteNum;
 
-        // 안전 장치 후 이미지 선택
-        // animations[방향][동작]
         if (animations != null && colDir < animations.length && rowFrame < animations[colDir].length) {
             image = animations[colDir][rowFrame];
         }
 
-        // 이미지가 없으면 기본 사각형으로 표시 (디버깅용)
         if (image == null) {
             g2.setColor(java.awt.Color.CYAN);
             g2.fillRect(x, y, Constants.TILE_SIZE, Constants.TILE_SIZE);
@@ -199,16 +172,14 @@ public class Player extends Entity {
             return;
         }
 
-        // [추가] 왼쪽 방향일 때 이미지를 수평 반전시켜서 그리기: drawImage의 음수 width 사용
         if (flipHorizontal && image != null) {
-            // 이미지를 반전시켜서 그리기: x + width, y, -width, height
             g2.drawImage(image, x + Constants.TILE_SIZE, y, -Constants.TILE_SIZE, Constants.TILE_SIZE, null);
         } else {
             g2.drawImage(image, x, y, Constants.TILE_SIZE, Constants.TILE_SIZE, null);
         }
     }
     
-    // [추가] 스탯 관련 메서드: 아이템 효과 적용을 위한 메서드들
+    // [김선욱님 코드] 스탯 관련 메서드: 아이템 효과 적용을 위한 메서드들
     public void heal(int value) { 
         hp = Math.min(maxHP, hp + value); 
     }
@@ -231,7 +202,7 @@ public class Player extends Entity {
         hp += (int)value; 
     }
     
-    // [추가] Getter 메서드: GamePanel에서 플레이어 스탯을 가져오기 위한 메서드들
+    // [김선욱님 코드] Getter 메서드: GamePanel에서 플레이어 스탯을 가져오기 위한 메서드들
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
     public double getAttackMultiplier() { return attackMultiplier; }
@@ -239,16 +210,11 @@ public class Player extends Entity {
     public double getMoveSpeed() { return baseSpeed; }
     
     public void receiveDamage(int damage) {
-        // 1. 체력 감소
         this.hp -= damage;
-        
-        // 2. 로그 출력 (디버깅용)
         System.out.println("플레이어 피격! 데미지: " + damage + " / 남은 체력: " + this.hp);
-        // 3. 사망 처리 (체력이 0 이하가 되면)
         if (this.hp <= 0) {
             this.hp = 0;
             System.out.println("플레이어 사망!");
-            // 여기에 나중에 게임 오버 화면 띄우는 코드(gp.gameState = gp.gameOverState) 등을 추가하면 됨
         }
     }
 }

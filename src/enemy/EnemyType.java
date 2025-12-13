@@ -9,7 +9,7 @@ public enum EnemyType {
     SNAKE("Snake", 150, 12, 2.0, 90),
     MUDGOLEM("Mud Golem", 200, 10, 1.0, 100),
     SPORE_FLOWER("Spore Flower", 100, 15, 0.0, 350), // 원거리
-    BOMB_SKULL("Bomb Skull", 100, 100, 6.0, 70),
+    BOMB_SKULL("Bomb Skull", 200, 100, 6.0, 100), // 공격 사거리 낮춤 (자폭 범위는 별도)
     HELL_HOUND("Hell Hound", 400, 25, 5.5, 90),
     FIRE_IMP("Fire Imp", 500, 50, 4.0, 300), // 원거리
     

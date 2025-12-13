@@ -5,22 +5,20 @@ import java.awt.event.KeyListener;
 
 public class KeyHandler implements KeyListener {
 
-    // 플레이어 이동 상태 변수 (Player 클래스에서 사용)
+    // [김민정님 코드] 플레이어 이동 상태 변수
     public boolean upPressed, downPressed, leftPressed, rightPressed;
     
-    // 키 입력 감지 (나중에 다른 곳에서 쓸 수 있도록 변수는 만들어둠)
+    // [김민정님 코드] 키 입력 감지
     public boolean onePressed, twoPressed, threePressed;
     public boolean qPressed, ePressed;
 
     @Override
     public void keyTyped(KeyEvent e) {
-        // 사용하지 않음
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
-        // 플레이어 이동 (WASD)
         if (code == KeyEvent.VK_W) {
             upPressed = true;
         }
@@ -34,7 +32,6 @@ public class KeyHandler implements KeyListener {
             rightPressed = true;
         }
         
-        // 아이템 및 기능 키 (GamePanel에서 직접 처리하지만, 상태 저장을 위해 남겨둠)
         if (code == KeyEvent.VK_1) {
             onePressed = true;
         }
@@ -55,7 +52,6 @@ public class KeyHandler implements KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {
         int code = e.getKeyCode();
-        // 키를 뗐을 때 상태 false로 변경
         if (code == KeyEvent.VK_W) {
             upPressed = false;
         }

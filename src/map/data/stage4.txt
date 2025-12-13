@@ -1,45 +1,23 @@
 # ========================================
 # Stage 4: The Frozen Cavern (얼음)
 # ========================================
-# 모든 방은 20x12 크기로 고정 (20 cols x 12 rows)
-# 문(D)은 벽 중간에 배치, 연결된 방끼리 위치 일치
-#
 # 방 구조:
-#   [Room 0: START]
-#         ↓
-#   [Room 1: NORMAL] → [Room 2: NORMAL]
-#         ↓                   ↓
-#   [Room 3: KEY] ← [Room 4: EXIT]
+#   [Room 0: START] → [Room 1: NORMAL] → [Room 2: KEY]
+#                            ↓                 ↓
+#                       [Room 3: ELITE] → [Room 4: KEY]
+#                            ↓                 ↓
+#                       [Room 5: KEY] → [Room 6: KEY]
+#                            ↓                 ↓
+#                       [Room 7: EXIT] ←──────┘
 # ========================================
 
 @STAGE 4
 
 # Room 0: START (시작 방 - 얼음 동굴 입구)
-# 연결: SOUTH → Room 1 (하단 중앙에 문)
-@ROOM 0
-@CONNECT SOUTH 1
+# 연결: EAST → Room 1
+@ROOM 0 START
+@CONNECT EAST 1
 WWWWWWWWWWWWWWWWWWWW
-W..................W
-W..................W
-W..................W
-W..................W
-W..................W
-W..................W
-W..................W
-W..................W
-W..................W
-W..................W
-WWWWWWWWWDWWWWWWWWWW
-
-# Room 1: NORMAL (일반 전투 방 - 얼음 복도)
-# 연결: NORTH → Room 0 (상단 중앙에 문)
-#       EAST → Room 2 (우측 중앙에 문)
-#       SOUTH → Room 3 (하단 중앙에 문)
-@ROOM 1
-@CONNECT NORTH 0
-@CONNECT EAST 2
-@CONNECT SOUTH 3
-WWWWWWWWWDWWWWWWWWWW
 W..................W
 W..................W
 W..................W
@@ -50,62 +28,133 @@ W..................W
 W..................W
 W..................W
 W..................W
+WWWWWWWWWWWWWWWWWWWW
+
+# Room 1: NORMAL (일반 전투 방 - 얼음 복도)
+# 연결: WEST → Room 0, EAST → Room 2, SOUTH → Room 3
+@ROOM 1 NORMAL
+@CONNECT WEST 0
+@CONNECT EAST 2
+@CONNECT SOUTH 3
+WWWWWWWWWWWWWWWWWWWW
+W..................W
+W....E.......E.....W
+W..................W
+W..................W
+W......E...........W
+D.........C........D
+W......E...........W
+W..................W
+W....E.......E.....W
+W..................W
 WWWWWWWWWDWWWWWWWWWW
 
-# Room 2: NORMAL (일반 전투 방 - 얼음 방)
-# 연결: WEST → Room 1 (좌측 중앙에 문)
-#       SOUTH → Room 4 (하단 중앙에 문)
-@ROOM 2
+# Room 2: KEY (열쇠 방 1 - 20x12)
+# 연결: WEST → Room 1, SOUTH → Room 4
+@ROOM 2 KEY
 @CONNECT WEST 1
 @CONNECT SOUTH 4
 WWWWWWWWWWWWWWWWWWWW
 W..................W
+W....E.......E.....W
 W..................W
 W..................W
-W..................W
-W..................W
+W......E...........W
 D..................W
+W......E...........W
 W..................W
-W..................W
-W..................W
+W....E.......E.....W
 W..................W
 WWWWWWWWWDWWWWWWWWWW
 
-# Room 3: KEY (열쇠 방 - 얼음 보물방)
-# 연결: NORTH → Room 1 (상단 중앙에 문)
-#       EAST → Room 4 (우측 중앙에 문)
-@ROOM 3
+# Room 3: ELITE (엘리트 전투 방 - 20x12)
+# 연결: NORTH → Room 1, EAST → Room 4, SOUTH → Room 5
+@ROOM 3 ELITE
 @CONNECT NORTH 1
 @CONNECT EAST 4
+@CONNECT SOUTH 5
 WWWWWWWWWDWWWWWWWWWW
 W..................W
 W..................W
 W..................W
 W..................W
-W..................W
+W.....L.......L....W
 W..................D
 W..................W
 W..................W
 W..................W
 W..................W
-WWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWDWWWWWWWWWW
 
-# Room 4: EXIT (다음 스테이지 - 얼음 동굴 출구)
-# 연결: NORTH → Room 2 (상단 중앙에 문)
-#       WEST → Room 3 (좌측 중앙에 문)
-# EXIT 타일(E)은 중앙에 배치
-@ROOM 4
+# Room 4: KEY (열쇠 방 2 - 20x12)
+# 연결: NORTH → Room 2, WEST → Room 3, SOUTH → Room 6
+@ROOM 4 KEY
 @CONNECT NORTH 2
 @CONNECT WEST 3
+@CONNECT SOUTH 6
+WWWWWWWWWDWWWWWWWWWW
+W..................W
+W....E.......E.....W
+W..................W
+W..................W
+W......E...........W
+D..................W
+W......E...........W
+W..................W
+W....E.......E.....W
+W..................W
+WWWWWWWWWDWWWWWWWWWW
+
+# Room 5: KEY (열쇠 방 3 - 20x12)
+# 연결: NORTH → Room 3, EAST → Room 6, SOUTH → Room 7
+@ROOM 5 KEY
+@CONNECT NORTH 3
+@CONNECT EAST 6
+@CONNECT SOUTH 7
+WWWWWWWWWDWWWWWWWWWW
+W..................W
+W....E.......E.....W
+W..................W
+W..................W
+W......E...........W
+W..................D
+W......E...........W
+W..................W
+W....E.......E.....W
+W..................W
+WWWWWWWWWDWWWWWWWWWW
+
+# Room 6: KEY (열쇠 방 4 - 20x12)
+# 연결: NORTH → Room 4, WEST → Room 5, SOUTH → Room 7
+@ROOM 6 KEY
+@CONNECT NORTH 4
+@CONNECT WEST 5
+WWWWWWWWWDWWWWWWWWWW
+W..................W
+W....E.......E.....W
+W..................W
+W..................W
+W......E...........W
+D..................W
+W......E...........W
+W..................W
+W....E.......E.....W
+W..................W
+WWWWWWWWWWWWWWWWWWWW
+
+# Room 7: EXIT (다음 스테이지 - 얼음 동굴 출구)
+# 연결: NORTH → Room 5, EAST → Room 6
+@ROOM 7 NORMAL
+@CONNECT NORTH 5
 WWWWWWWWWDWWWWWWWWWW
 W..................W
 W..................W
 W..................W
 W..................W
 W..................W
-D..................W
 W..................W
 W..................W
-W........E.........W
+W..................W
+W........X.........W
 W..................W
 WWWWWWWWWWWWWWWWWWWW

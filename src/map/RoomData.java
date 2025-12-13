@@ -3,17 +3,21 @@ package map;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 방 데이터와 연결 정보를 담는 클래스
- */
+// [서충만님 코드] 방 데이터와 연결 정보를 담는 클래스
 public class RoomData {
     private int roomId;
     private char[][] map;
-    private Map<String, Integer> connections; // 방향 -> 연결된 방 ID
+    private Map<String, Integer> connections;
+    private String roomType;
 
     public RoomData(int roomId, char[][] map) {
+        this(roomId, map, "NORMAL");
+    }
+
+    public RoomData(int roomId, char[][] map, String roomType) {
         this.roomId = roomId;
         this.map = map;
+        this.roomType = roomType;
         this.connections = new HashMap<>();
     }
 
@@ -39,5 +43,9 @@ public class RoomData {
 
     public boolean hasConnection(String direction) {
         return connections.containsKey(direction.toUpperCase());
+    }
+
+    public String getRoomType() {
+        return roomType;
     }
 }
