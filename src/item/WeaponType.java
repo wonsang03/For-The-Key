@@ -1,5 +1,7 @@
 package item;
 
+import java.awt.image.BufferedImage;
+
 public enum WeaponType {
     PISTOL("Pistol", 10, 0.4, 600),
     SHOTGUN("Shotgun", 5, 1.2, 350),
@@ -12,7 +14,10 @@ public enum WeaponType {
     private final double damage, attackSpeed, range;
 
     WeaponType(String name, double damage, double attackSpeed, double range) {
-        this.name = name; this.damage = damage; this.attackSpeed = attackSpeed; this.range = range;
+        this.name = name;
+        this.damage = damage;
+        this.attackSpeed = attackSpeed;
+        this.range = range;
     }
 
     public String getName() { return name; }
@@ -24,8 +29,14 @@ public enum WeaponType {
         int idx = (current.ordinal() + 1) % values().length;
         return values()[idx];
     }
+
     public static WeaponType previous(WeaponType current) {
         int idx = (current.ordinal() - 1 + values().length) % values().length;
         return values()[idx];
     }
+
+	public BufferedImage getWeaponImage() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

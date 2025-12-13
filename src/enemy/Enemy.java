@@ -1060,4 +1060,9 @@ public class Enemy {
             return y;
         }
     }
+
+	public EnemyType getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

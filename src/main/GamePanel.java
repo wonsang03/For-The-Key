@@ -1,11 +1,15 @@
 package main;
 
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -26,6 +30,8 @@ import ui.UIRenderer;
 import item.Bullet;
 import item.Item;
 import item.ItemType;
+import item.Key;
+import item.Weapon;
 import item.DamageText;
 import item.WeaponType;
 // [서충만님 코드] 맵 타일 및 방 시스템
@@ -62,6 +68,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private ArrayList<Item> items = new ArrayList<>(); // 아이템 
     private ArrayList<ItemType> acquiredItems = new ArrayList<>(); // 획득한 아이템
     private ArrayList<DamageText> damageTexts = new ArrayList<>(); // 데미지 텍스트
+    private ArrayList<Key> keys = new ArrayList<>();
 
     private boolean keyW, keyA, keyS, keyD; // WASD 키 상태
     
@@ -259,13 +266,41 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     enemiesToAdd.add(new Enemy(EnemyType.MAGMA_SLIME_SMALL, offsetX2, offsetY2));
                 }
                 
-                // [김선욱님 코드] 아이템 드롭
-                if (Math.random() < 0.6) {
-                    ItemType drop = ItemType.getRandom();
+             // [김선욱님 코드] 드롭 처리
+                EnemyType type = enemy.getType();
+
+                // 🔹 정예 몬스터 목록
+                boolean isElite =
+                    type == EnemyType.ORC ||
+                    type == EnemyType.MINOTAUR ||
+                    type == EnemyType.GOLEM ||
+                    type == EnemyType.FROZEN_KNIGHT ||
+                    type == EnemyType.YETI ||
+                    type == EnemyType.SNOW_MAGE ||
+                    type == EnemyType.ICE_GOLEM ||
+                    type == EnemyType.HELL_KNIGHT;
+
+                // 🔹 정예 몬스터 → 무조건 열쇠 드롭 (아이템 X)
+                if (isElite) {
+                    keys.add(new Key(enemy.x, enemy.y));
+                    System.out.println("🔑 정예몹 처치 → 열쇠 드롭 (확정)");
+                }
+
+                // 🔹 일반 몬스터만 아이템 드롭 확률 적용
+                else if (Math.random() < 0.6) {
+                    ItemType[] possibleDrops = {
+                        ItemType.POWER_FRUIT,
+                        ItemType.LIFE_SEED,
+                        ItemType.WIND_CANDY
+                    };
+                    ItemType drop = possibleDrops[(int)(Math.random() * possibleDrops.length)];
                     items.add(new Item(enemy.x, enemy.y, drop));
                 }
-                
+
                 enemiesToRemove.add(enemy);
+
+
+
             }
         }
         
@@ -495,10 +530,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             double step = spread / (pellets - 1);
             for (int i = 0; i < pellets; i++) {
                 double a = start + step * i;
-                bullets.add(new Bullet(px, py, a, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange()));
+                bullets.add(new Bullet(px, py, a, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange(), currentWeapon));
             }
         } else {
-            bullets.add(new Bullet(px, py, angle, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange()));
+            bullets.add(new Bullet(px, py, angle, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange(), currentWeapon));
         }
     }
     
