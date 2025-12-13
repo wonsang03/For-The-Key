@@ -43,7 +43,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     Thread gameThread;
     final int FPS = Constants.FPS;
 
-    // [민정님 추가] UI 렌더러 및 게임 상태 관리
+    // [김민정님 코드] UI 렌더러 및 게임 상태 관리
     public UIRenderer ui = new UIRenderer(this);
     public int gameState;
     public final int titleState = 0;
@@ -96,7 +96,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     public TileManager tileManager;
     
     // [사운드 시스템]
-    private SoundManager soundManager;
+    public SoundManager soundManager; // [김민정님 코드] Player에서 접근하기 위해 public으로 변경
 
     public GamePanel() {
         // [서상원님 코드] 패널 기본 설정
@@ -105,6 +105,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         this.setDoubleBuffered(true);
         this.addKeyListener(this);
         this.setFocusable(true);
+        this.setFocusTraversalKeysEnabled(false);  // [김민정님 코드] Tab 누를 시 정보창 띄우기 위함
 
         // [김민정님 코드] KeyHandler 리스너 추가 (플레이어 이동용)
         this.addKeyListener(keyH);
@@ -147,9 +148,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         damageTexts.clear();
         keys.clear();
 
-        // [민정님 추가] 게임 시작 시 타이틀 화면 상태로 설정
+        // [김민정님 코드] 게임 시작 시 타이틀 화면 상태로 설정
         gameState = titleState;
-        soundManager.playMusic(29);
+        soundManager.playMusic(29); // [김민정님 코드] 타이틀 화면 BGM 재생
         
         startGameThread();
     }
@@ -193,9 +194,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             return;
         }
         
-        // [민정님 추가] 플레이 상태가 아니면(타이틀, 게임오버 등) 게임 로직 멈춤
+        // [김민정님 코드] 플레이 상태가 아니면(타이틀, 게임오버 등) 게임 로직 멈춤
         if (gameState != playState) {
             return;
+        }
+
+        // [김민정님 코드] 테스트용: K키가 눌려있으면 데미지 입음
+        if (keyH.kPressed == true) {
+            player.receiveDamage(10); 
         }
         
         // [김민정님 코드] 플레이어 이동 업데이트
@@ -305,7 +311,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 }
 
                 enemiesToRemove.add(enemy);
-                soundManager.playSE(28);
+                soundManager.playSE(28); // [김민정님 코드] 적 사망 효과음
             }
         }
         
@@ -330,11 +336,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             return dt.isExpired();
         });
         
-        // [민정님 추가] 플레이어 사망 체크 (HP가 0 이하면 게임오버)
+        // [김민정님 코드] 플레이어 사망 체크 (HP가 0 이하면 게임오버)
         if (player.getHP() <= 0) {
             gameState = gameOverState;
-            soundManager.stop();
-            soundManager.playSE(21);
+            soundManager.stop();     // [김민정님 코드] 배경음악 정지
+            soundManager.playSE(21); // [김민정님 코드] 플레이어 사망(게임오버) 효과음
         }
     }
     
@@ -394,7 +400,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     findEnemySpawnPoints();
                     spawnEnemiesFromMap();
                     playStageMusic();
-                    soundManager.playSE(18);
+                    soundManager.playSE(18); // [김민정님 코드] 문 열리는 소리
                 }
             }
         }
@@ -537,13 +543,28 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     
     // [김선욱님 코드] 총알 발사
     private void shoot() {
-        if (gameState != playState) return;
+        if (gameState != playState) return; // [김민정님 코드] 플레이 중이 아니면 발사 불가
         
         long now = System.currentTimeMillis();
         long delay = (long)(currentWeapon.getAttackSpeed() * 1000 / (1 + player.getAttackSpeedBonus()));
         if (now - lastShootTime < delay) return;
         lastShootTime = now;
+        
+        // [김민정님 코드] 무기 발사 사운드
+        switch (currentWeapon) {
+            // 근접 무기 (검)
+        	case DAGGER: soundManager.playSE(0); break; // [김민정님 코드] 단검 소리
+            case KNIGHT_SWORD: soundManager.playSE(1); break; // [김민정님 코드] 롱소드 소리
+            case LONG_SWORD: soundManager.playSE(2); break; // [김민정님 코드] 대검 소리
+            
+            // 원거리 무기 (총)
+            case PISTOL: soundManager.playSE(3); break; // [김민정님 코드] 권총 소리
+            case SHOTGUN: soundManager.playSE(4); break; // [김민정님 코드] 샷건 소리
+            case SNIPER: soundManager.playSE(5); break; // [김민정님 코드] 스나이퍼 소리
+            default: soundManager.playSE(3); break; 
+        }
 
+        // [서상원님 코드] 마우스 위치를 월드 좌표로 변환 (카메라 오프셋 적용)
         double worldMouseX = mouseX + cameraX;
         double worldMouseY = mouseY + cameraY;
         
@@ -563,25 +584,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             }
         } else {
             bullets.add(new Bullet(px, py, angle, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange(), currentWeapon));
-        }
-        
-        playWeaponSound();
-    }
-    
-    // [사운드] 무기별 사운드 재생
-    private void playWeaponSound() {
-        int soundIndex = -1;
-        switch (currentWeapon) {
-            case DAGGER: soundIndex = 0; break;
-            case LONG_SWORD: soundIndex = 1; break;
-            case KNIGHT_SWORD: soundIndex = 2; break;
-            case PISTOL: soundIndex = 3; break;
-            case SHOTGUN: soundIndex = 4; break;
-            case SNIPER: soundIndex = 5; break;
-        }
-        
-        if (soundIndex >= 0) {
-            soundManager.playWeaponSound(soundIndex);
         }
     }
     
@@ -648,7 +650,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 item.pickUp();
                 acquiredItems.add(item.getType());
                 applyItemEffect(item.getType());
-                soundManager.playSE(15);
+                
+                // [김민정님 코드] 아이템 획득 사운드
+                soundManager.playSE(15); // [김민정님 코드] 아이템 획득 소리
             }
         }
     }
@@ -707,7 +711,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             if (enemy.shouldPlayAttackSound()) {
                 int soundIndex = enemy.getAttackSoundIndex();
                 if (soundIndex >= 0) {
-                    soundManager.playEnemySound(soundIndex);
+                    soundManager.playSE(soundIndex);
                 }
             }
             
@@ -747,7 +751,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         currentWeapon = weapons[currentIdx];
     }
     
-    // [민정님 추가] Getter (UIRenderer에서 사용)
+    // [김민정님 코드] Getter (UIRenderer에서 사용)
     public WeaponType getCurrentWeapon() {
         return currentWeapon;
     }
@@ -761,13 +765,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         
-        // [민정님 추가] 타이틀 화면이면 UI만 그리고 리턴
+        // [김민정님 코드] 타이틀 화면이면 UI만 그리고 리턴
         if (gameState == titleState) {
             ui.draw(g2);
             return;
         }
         
-        // [민정님 추가] 로딩 화면이면 UI만 그리고 리턴
+        // [김민정님 코드] 로딩 화면이면 UI만 그리고 리턴
         if (gameState == loadingState) {
             ui.draw(g2);
             return;
@@ -847,7 +851,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             g2Copy.dispose();
         }
 
-        // [민정님 수정] HUD 그리기 (기존 drawPlayerHUD 대신 ui.draw 사용)
+        // [김민정님 코드] HUD 그리기 (기존 drawPlayerHUD 대신 ui.draw 사용)
         ui.draw(g2);
         g2.dispose();
     }
@@ -865,8 +869,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             if (code == KeyEvent.VK_ENTER) {
                 gameState = loadingState;
                 loadingStartTime = System.currentTimeMillis();
-                soundManager.stop();
-                playStageMusic();
+                soundManager.stop();      // [김민정님 코드] 타이틀 음악 정지
+                playStageMusic();         // [김민정님 코드] 스테이지 배경음 시작
             }
         }
         else if (gameState == playState) {
@@ -938,11 +942,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     @Override
     public void mouseExited(MouseEvent e) {}
     
-    // [사운드 재생 헬퍼 메소드]
-    public void playStageMusic() {
+    // [김민정님 코드] 사운드 재생 헬퍼 메소드
+    public void playStageMusic() { // [김민정님 코드] 스테이지별 음악 자동 재생 메소드
         int currentStage = MapLoader.getCurrentStage();
         if (currentStage == 0) currentStage = 1;
 
+        // Stage 1(Forest)=6, Stage 2=7, ...
         int musicIndex = 5 + currentStage; 
         
         if (musicIndex < 6 || musicIndex > 10) {

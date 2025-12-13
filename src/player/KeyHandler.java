@@ -11,7 +11,8 @@ public class KeyHandler implements KeyListener {
     // [김민정님 코드] 키 입력 감지
     public boolean onePressed, twoPressed, threePressed;
     public boolean qPressed, ePressed;
-
+    public boolean kPressed;
+    
     @Override
     public void keyTyped(KeyEvent e) {
     }
@@ -47,6 +48,9 @@ public class KeyHandler implements KeyListener {
         if (code == KeyEvent.VK_E) {
             ePressed = true;
         }
+        if (code == KeyEvent.VK_K) {
+            kPressed = true;
+        }
     }
 
     @Override
@@ -79,6 +83,9 @@ public class KeyHandler implements KeyListener {
         }
         if (code == KeyEvent.VK_E) {
             ePressed = false;
+        }
+        if (code == KeyEvent.VK_K) {
+            kPressed = false;
         }
     }
 }
