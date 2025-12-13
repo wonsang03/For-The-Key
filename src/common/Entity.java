@@ -9,6 +9,9 @@ public class Entity {
     // 1. 위치와 속도 (모든 캐릭터 공통)
     public int x, y;
     public int speed;
+    
+    // [추가] 이름을 저장할 변수
+    public String name; // 민정 추가
 
     // 2. 이미지와 애니메이션
     // 나중에 몬스터나 NPC도 이 변수들을 써서 움직입니다.
@@ -33,4 +36,9 @@ public class Entity {
     public void draw(Graphics2D g2) {
         // 자식 클래스에서 코드를 채울 예정
     }
+    
+    // [추가] 이름을 가져오는 기능
+    public String getName() {
+        return name;
+    } // 민정 추가
 }
