@@ -890,4 +890,3 @@ public class Boss {
         public double getY() { return y; }
     }
 }
-

@@ -2,8 +2,12 @@ package player;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import main.GamePanel;
 
 public class KeyHandler implements KeyListener {
+
+    // [김민정님 코드] GamePanel 참조
+    GamePanel gp;
 
     // [김민정님 코드] 플레이어 이동 상태 변수
     public boolean upPressed, downPressed, leftPressed, rightPressed;
@@ -12,6 +16,11 @@ public class KeyHandler implements KeyListener {
     public boolean onePressed, twoPressed, threePressed;
     public boolean qPressed, ePressed;
     public boolean kPressed;
+    
+    // [김민정님 코드] 생성자: GamePanel을 받아와서 연결
+    public KeyHandler(GamePanel gp) {
+        this.gp = gp;
+    }
     
     @Override
     public void keyTyped(KeyEvent e) {
@@ -50,6 +59,12 @@ public class KeyHandler implements KeyListener {
         }
         if (code == KeyEvent.VK_K) {
             kPressed = true;
+        }
+        
+        if (code == KeyEvent.VK_TAB) {
+            if (gp != null && gp.gameState == gp.playState) {
+                gp.ui.showStatusDetail = !gp.ui.showStatusDetail;
+            }
         }
     }
 

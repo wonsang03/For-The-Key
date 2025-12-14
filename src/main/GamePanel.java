@@ -59,7 +59,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
     // [김민정님 코드] 플레이어 및 KeyHandler
     public Player player;
-    private KeyHandler keyH = new KeyHandler();
+    private KeyHandler keyH;
     
     // [김선욱님 코드] 무기 시스템
     private WeaponType currentWeapon = WeaponType.PISTOL;
@@ -107,7 +107,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         this.setFocusable(true);
         this.setFocusTraversalKeysEnabled(false);  // [김민정님 코드] Tab 누를 시 정보창 띄우기 위함
 
-        // [김민정님 코드] KeyHandler 리스너 추가 (플레이어 이동용)
+        // [김민정님 코드] KeyHandler 초기화 및 리스너 추가 (플레이어 이동용)
+        keyH = new KeyHandler(this);
         this.addKeyListener(keyH);
         // [김선욱님 코드] 마우스 리스너 추가 (총알 발사용)
         addMouseMotionListener(this);
