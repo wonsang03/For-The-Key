@@ -3,12 +3,14 @@ package map;
 import java.util.HashMap;
 import java.util.Map;
 
-// [서충만님 코드] 방 데이터와 연결 정보를 담는 클래스
+/**
+ * 방 데이터와 연결 정보를 담는 클래스
+ */
 public class RoomData {
     private int roomId;
     private char[][] map;
-    private Map<String, Integer> connections;
-    private String roomType;
+    private Map<String, Integer> connections; // 방향 -> 연결된 방 ID
+    private String roomType; // 방 타입 (START, NORMAL, KEY, BOSS, EXIT)
 
     public RoomData(int roomId, char[][] map) {
         this(roomId, map, "NORMAL");

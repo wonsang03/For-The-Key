@@ -2,6 +2,7 @@ package item;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
@@ -23,7 +24,7 @@ public class Key {
     private static void loadSpriteSheet() {
         if (spriteSheet != null) return;
         try {
-            spriteSheet = ImageIO.read(Key.class.getResource("/item/items.png"));
+        	spriteSheet = ImageIO.read(new File("res/item/items.png"));
         } catch (IOException | IllegalArgumentException e) {
             System.out.println("⚠️ Key 시트 로드 실패: " + e.getMessage());
             spriteSheet = null;
@@ -37,10 +38,10 @@ public class Key {
             return;
         }
 
-        int spriteX = 420;
-        int spriteY = 860;
+        int spriteX = 1761;
+        int spriteY = 1288;
         int spriteW = 32;
-        int spriteH = 32;
+        int spriteH = 25;
 
         try {
             image = spriteSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);

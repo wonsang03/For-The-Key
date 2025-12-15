@@ -1,16 +1,29 @@
 package main;
 
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -22,12 +35,17 @@ import enemy.Boss;
 import player.Player;
 import player.KeyHandler;
 import ui.UIRenderer;
+import item.Box;
 // [김선욱님 코드] 전투 시스템 (총알, 아이템, 무기)
 import item.Bullet;
 import item.Item;
 import item.ItemType;
+import item.Weapon;
 import item.Key;
+import item.MeleeAttack;
+import item.WeaponRarity;
 import item.DamageText;
+import item.HitSpark;
 import item.WeaponType;
 // [서충만님 코드] 맵 타일 및 방 시스템
 import map.TileManager;
@@ -59,9 +77,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
     // [김민정님 코드] 플레이어 및 KeyHandler
     public Player player;
-    private KeyHandler keyH;
+    // Player가 스테이지 이동/무기 줍기에서 keyH의 플래그에 접근하므로 public으로 둔다.
+    public KeyHandler keyH = new KeyHandler(this);
     
+    public ArrayList<Weapon> groundWeapons = new ArrayList<>();
     // [김선욱님 코드] 무기 시스템
+    //  - 실제 장착 무기는 Player 인벤토리 기준으로 관리하고,
+    //    여기엔 "현재 사용 중인 무기의 타입"만 동기화해서 사용한다.
     private WeaponType currentWeapon = WeaponType.PISTOL;
     
     // [서상원님 코드] 적 시스템
@@ -75,11 +97,20 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private ArrayList<ItemType> acquiredItems = new ArrayList<>();
     public ArrayList<DamageText> damageTexts = new ArrayList<>();
     private ArrayList<Key> keys = new ArrayList<>();
-    
+    private boolean vampireEffectActive = false;
+    private Set<ItemType> eliteDropsGiven = new HashSet<>();
+    private List<MeleeAttack> meleeAttacks = new ArrayList<>();
+    private List<HitSpark> effects = new java.util.ArrayList<>();
+    private boolean isWeaponAnimating = false;
+    private ArrayList<Box> boxes = new ArrayList<>();
+    private ArrayList<int[]> boxSpawnPoints = new ArrayList<>();
+
     // [수정] 방별 아이템 관리 (각 방에 드롭된 아이템을 방별로 저장)
     private java.util.Map<Integer, ArrayList<Item>> roomItems = new java.util.HashMap<>();
 
-    private boolean keyW, keyA, keyS, keyD;
+
+    private boolean keyW, keyA, keyS, keyD, keyG, keyF;
+    private map.Minimap minimap;
     
     // [김선욱님 코드] 마우스 입력 (총알 발사용)
     private int mouseX = Constants.WINDOW_WIDTH / 2;
@@ -133,18 +164,47 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         // [사운드 시스템] 초기화
         soundManager = new SoundManager();
         setupGame();
+        
+     // 🖱️ 기본 시스템 커서 완전히 숨기기
+        try {
+            Toolkit toolkit = Toolkit.getDefaultToolkit();
+            BufferedImage blankCursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+            Cursor blankCursor = toolkit.createCustomCursor(blankCursorImg, new Point(0, 0), "blankCursor");
+            setCursor(blankCursor);
+            System.out.println("🖱️ 시스템 커서 숨김 완료 (무기 커서만 표시)");
+        } catch (Exception e) {
+            System.out.println("⚠️ 커서 숨김 실패: " + e.getMessage());
+        }
+
+    }
+
+    public void addBoxAt(int x, int y) {
+        boxes.add(new Box(x, y));
+    }
+
+    // [김선욱님 코드] 중복 방지를 위한 존재 여부 확인 함수
+    public boolean boxExistsAt(int x, int y) {
+        for (Box b : boxes) {
+            if (b.x == x && b.y == y) return true;
+        }
+        return false;
     }
 
     public void setupGame() {
         // [서충만님 코드] 맵 초기화
-        tileManager = new TileManager();
+        tileManager = new TileManager(this);
         MapLoader.loadAllRooms(1);
         currentRoom = MapLoader.getRoom(0);
         
+        minimap = new map.Minimap();
+
         // [김민정님 코드] 플레이어 초기화
         player = new Player(this, keyH);
         player.x = Constants.TILE_SIZE * 10;
         player.y = Constants.TILE_SIZE * 6;
+
+        // 🔫 플레이어 인벤토리의 현재 무기와 GamePanel의 currentWeapon 동기화
+        syncCurrentWeaponFromPlayer();
         
         // [서상원님 코드] 카메라 초기화
         cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
@@ -175,7 +235,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         roomItems.clear();
         
         // 맵 초기화 (스테이지 1, 0번룸)
-        tileManager = new TileManager();
+        tileManager = new TileManager(this);
         MapLoader.loadAllRooms(1);
         currentRoom = MapLoader.getRoom(0);
         
@@ -188,8 +248,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
         cameraY = player.y - Constants.WINDOW_HEIGHT / 2.0;
         
-        // 무기 초기화
-        currentWeapon = WeaponType.PISTOL;
+        // 무기 초기화: 플레이어 생성 후 보유 무기에 맞춰 동기화
+        syncCurrentWeaponFromPlayer();
         
         // 아이템 및 기타 초기화
         bullets.clear();
@@ -319,7 +379,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         // [서상원님 코드] 죽은 적 처리 및 MAGMA_SLIME_BIG 분열
         ArrayList<Enemy> enemiesToRemove = new ArrayList<>();
         ArrayList<Enemy> enemiesToAdd = new ArrayList<>();
-        
+
         for (Enemy enemy : enemies) {
             if (enemy.isDead()) {
                 // [서상원님 코드] MAGMA_SLIME_BIG 분열 처리
@@ -331,7 +391,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     enemiesToAdd.add(new Enemy(EnemyType.MAGMA_SLIME_SMALL, offsetX1, offsetY1));
                     enemiesToAdd.add(new Enemy(EnemyType.MAGMA_SLIME_SMALL, offsetX2, offsetY2));
                 }
-                
+
+                if (vampireEffectActive) {
+                    player.heal(10);
+                    damageTexts.add(new DamageText(player.x, player.y - 10, "+10 HP", Color.PINK));
+                }
+
                 // [김선욱님 코드] 드롭 처리
                 EnemyType type = enemy.type;
 
@@ -346,22 +411,56 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     type == EnemyType.HELL_KNIGHT;
 
                 if (isElite) {
+                    // 🔹 정예몹: 열쇠 100%
                     keys.add(new Key(enemy.x, enemy.y));
-                } else if (Math.random() < 0.6) {
-                    ItemType[] possibleDrops = {
-                        ItemType.POWER_FRUIT,
-                        ItemType.LIFE_SEED,
-                        ItemType.WIND_CANDY
-                    };
-                    ItemType drop = possibleDrops[(int)(Math.random() * possibleDrops.length)];
-                    Item newItem = new Item(enemy.x, enemy.y, drop);
-                    
-                    // [수정] 현재 방의 아이템 목록에 추가
-                    if (currentRoom != null) {
-                        int roomId = currentRoom.getRoomId();
-                        roomItems.putIfAbsent(roomId, new ArrayList<>());
-                        roomItems.get(roomId).add(newItem);
-                        items.add(newItem);
+
+                    // 🔹 아직 안 나온 희귀 아이템만 필터링
+                    List<ItemType> remaining = new ArrayList<>(Arrays.asList(
+                        ItemType.DEMON_HORN,
+                        ItemType.HERMES_BOOTS,
+                        ItemType.RAPID_GLOVES,
+                        ItemType.VAMPIRE_TOOTH,
+                        ItemType.DRAGON_SCALE
+                    ));
+                    remaining.removeAll(eliteDropsGiven); // 이미 드롭된 건 제외
+
+                    // 🔹 남은 게 있으면 하나 랜덤 드롭
+                    if (!remaining.isEmpty()) {
+                        ItemType drop = remaining.get((int)(Math.random() * remaining.size()));
+                        Item dropped = new Item(enemy.x, enemy.y, drop);
+                        items.add(dropped);
+                        // ✅ 방별 아이템 저장
+                        if (currentRoom != null) {
+                            int roomId = currentRoom.getRoomId();
+                            roomItems.putIfAbsent(roomId, new ArrayList<>());
+                            roomItems.get(roomId).add(dropped);
+                        }
+                        eliteDropsGiven.add(drop); // ✅ 드롭 기록 추가
+                        System.out.println("💎 정예몹 드롭 (1회 한정): " + drop.getName());
+                    } else {
+                        System.out.println("💠 모든 희귀 아이템 이미 드롭됨 — 이번엔 열쇠만!");
+                    }
+                }
+                else {
+                    // 🔹 일반몹: 80% 확률로 기본 3종 드롭, 20%는 드롭 없음
+                    if (Math.random() < 0.8) {
+                        ItemType[] commonDrops = {
+                            ItemType.POWER_FRUIT,
+                            ItemType.LIFE_SEED,
+                            ItemType.WIND_CANDY
+                        };
+                        ItemType drop = commonDrops[(int)(Math.random() * commonDrops.length)];
+                        Item dropped = new Item(enemy.x, enemy.y, drop);
+                        items.add(dropped);
+                        // ✅ 방별 아이템 저장
+                        if (currentRoom != null) {
+                            int roomId = currentRoom.getRoomId();
+                            roomItems.putIfAbsent(roomId, new ArrayList<>());
+                            roomItems.get(roomId).add(dropped);
+                        }
+                        System.out.println("🍎 일반몹 드롭: " + drop.getName());
+                    } else {
+                        System.out.println("🪙 일반몹 드롭 없음");
                     }
                 }
 
@@ -369,27 +468,55 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 soundManager.playSE(28); // [김민정님 코드] 적 사망 효과음
             }
         }
-        
+
         enemies.removeAll(enemiesToRemove);
         enemies.addAll(enemiesToAdd);
-        
+
         // [수정] 방의 모든 적을 처치했을 때 방을 클리어된 목록에 추가
         if (currentRoom != null && !hasAliveEnemies() && !clearedRooms.contains(currentRoom.getRoomId())) {
             clearedRooms.add(currentRoom.getRoomId());
         }
-        
+
         // [김선욱님 코드] 총알 업데이트
         bullets.removeIf(b -> { b.update(); return !b.isActive(); });
+
+        // [김선욱님 코드] 근접 공격(MeleeAttack) 업데이트
+        meleeAttacks.removeIf(ma -> {
+            ma.update();
+            return !ma.isActive();
+        });
+        
+        if (keyH.qPressed) {
+            updateCursorToWeapon();
+            keyH.qPressed = false;
+        }
+        
+        // [김선욱님 코드] 근접 공격 업데이트
+        for (MeleeAttack ma : meleeAttacks) {
+            ma.update(cameraX, cameraY);
+        }
+
+        // 💥 [김선욱님 코드] 히트 스파크 효과 업데이트
+        effects.removeIf(e -> !e.isActive());
         
         // [김선욱님 코드] 총알-적 충돌 감지
         checkBulletCollisions();
+
+        // [김선욱님 코드] 근접 공격-적 충돌 감지
+        checkMeleeCollisions();
+
         // [김선욱님 코드] 아이템 획득 체크
         checkItemPickups();
+
         // [김선욱님 코드] 열쇠 획득 체크
         checkKeyPickups();
+
         // [적 공격 체크] 일반 적의 근접 공격 및 투사체 충돌 체크
         checkEnemyAttacks();
         
+        checkBoxCollision(); // ✅ 상자 충돌 체크
+
+
         // [김선욱님 코드] 데미지 텍스트 업데이트
         damageTexts.removeIf(dt -> {
             dt.update();
@@ -661,7 +788,73 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     String.valueOf(explosionDamage), Color.ORANGE));
         }
     }
-    
+    private void checkBoxCollision() {
+        int playerScreenX = (int)(player.x - cameraX);
+        int playerScreenY = (int)(player.y - cameraY);
+        Rectangle playerRect = new Rectangle(playerScreenX, playerScreenY, Constants.TILE_SIZE, Constants.TILE_SIZE);
+
+        for (Box box : boxes) {
+            Rectangle boxRect = new Rectangle((int)(box.x - cameraX), (int)(box.y - cameraY),
+                                              Constants.TILE_SIZE, Constants.TILE_SIZE);
+
+            if (!box.opened && playerRect.intersects(boxRect)) {
+                if (enemies.isEmpty()) {
+                    box.open();
+                    soundManager.playSE(15);
+
+                    double roll = Math.random(); // 0~1 사이 난수
+
+                    if (roll < 0.5) {
+                        // 🗡 무기 드롭 (50%)
+                        WeaponType[] weaponPool = {
+                            WeaponType.PISTOL,
+                            WeaponType.SHOTGUN,
+                            WeaponType.SNIPER
+                        };
+                        WeaponType dropWeapon = weaponPool[(int)(Math.random() * weaponPool.length)];
+
+                        // [김선욱님 코드] 무기 등급 랜덤 부여
+                        WeaponRarity rarity = WeaponRarity.getRandomRarity();
+                        dropWeapon.setRarity(rarity);
+
+                        System.out.println("🎁 상자에서 " + dropWeapon.getDisplayName() +
+                                " 드롭! (공격력×" + rarity.getAttackMultiplier() +
+                                ", 공속×" + rarity.getSpeedMultiplier() + ")");
+
+                        Item dropped = new Item(box.x, box.y, dropWeapon);
+                        items.add(dropped);
+                        // ✅ 방별 아이템 저장
+                        if (currentRoom != null) {
+                            int roomId = currentRoom.getRoomId();
+                            roomItems.putIfAbsent(roomId, new ArrayList<>());
+                            roomItems.get(roomId).add(dropped);
+                        }
+
+                    } else {
+                        // ✨ 액티브 아이템 드롭 (50%)
+                        ItemType[] activePool = {
+                            ItemType.RED_POTION,
+                            ItemType.ELIXIR,
+                            ItemType.GHOST_CLOAK
+                        };
+                        ItemType dropItem = activePool[(int)(Math.random() * activePool.length)];
+                        Item dropped = new Item(box.x, box.y, dropItem);
+                        items.add(dropped);
+                        // ✅ 방별 아이템 저장
+                        if (currentRoom != null) {
+                            int roomId = currentRoom.getRoomId();
+                            roomItems.putIfAbsent(roomId, new ArrayList<>());
+                            roomItems.get(roomId).add(dropped);
+                        }
+                        System.out.println("💎 액티브 아이템 드롭: " + dropItem.name());
+                    }
+
+                } else {
+                    System.out.println("🚫 상자 잠김 — 적이 아직 남아 있음!");
+                }
+            }
+        }
+    }
     // [로딩 화면] 로딩 완료 후 몹 소환
     private void spawnEnemiesAfterLoading() {
         // [서상원님 코드] 현재 방의 적 스폰 포인트 찾기 및 스폰
@@ -702,38 +895,57 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         g2.fillRect(mapPixelWidth - cornerSize, mapPixelHeight - cornerSize, cornerSize, cornerSize);
     }
     
-    // [김선욱님 코드] 총알 발사
+    // [김선욱님 코드] 총알/근접 공격 발사 처리
     private void shoot() {
         if (gameState != playState) return; // [김민정님 코드] 플레이 중이 아니면 발사 불가
-        
+
+        // ✅ 항상 Player 인벤토리 기준으로 현재 무기 타입을 먼저 동기화
+        if (player == null || player.getCurrentWeapon() == null) return;
+        currentWeapon = player.getCurrentWeapon().getType();
+
         long now = System.currentTimeMillis();
         long delay = (long)(currentWeapon.getAttackSpeed() * 1000 / (1 + player.getAttackSpeedBonus()));
         if (now - lastShootTime < delay) return;
         lastShootTime = now;
-        
+
         // [김민정님 코드] 무기 발사 사운드
         switch (currentWeapon) {
             // 근접 무기 (검)
-        	case DAGGER: soundManager.playSE(0); break; // [김민정님 코드] 단검 소리
-            case KNIGHT_SWORD: soundManager.playSE(1); break; // [김민정님 코드] 롱소드 소리
-            case LONG_SWORD: soundManager.playSE(2); break; // [김민정님 코드] 대검 소리
-            
+            case DAGGER: soundManager.playSE(0); break; // [김민정님 코드] 단검 소리
+            case LONG_SWORD: soundManager.playSE(1); break; // [김민정님 코드] 롱소드 소리
+            case KNIGHT_SWORD: soundManager.playSE(2); break; // [김민정님 코드] 기사검 소리
+
             // 원거리 무기 (총)
             case PISTOL: soundManager.playSE(3); break; // [김민정님 코드] 권총 소리
             case SHOTGUN: soundManager.playSE(4); break; // [김민정님 코드] 샷건 소리
             case SNIPER: soundManager.playSE(5); break; // [김민정님 코드] 스나이퍼 소리
-            default: soundManager.playSE(3); break; 
+            default: soundManager.playSE(3); break;
         }
 
         // [서상원님 코드] 마우스 위치를 월드 좌표로 변환 (카메라 오프셋 적용)
         double worldMouseX = mouseX + cameraX;
         double worldMouseY = mouseY + cameraY;
-        
+
         double px = player.x + Constants.TILE_SIZE / 2;
         double py = player.y + Constants.TILE_SIZE / 2;
         double angle = Math.atan2(worldMouseY - py, worldMouseX - px);
         double bulletSpeed = 10;
 
+        // [김선욱님 코드] 근접 무기 공격 처리 (총알 대신 휘두름 이펙트 생성)
+        if (currentWeapon == WeaponType.DAGGER ||
+            currentWeapon == WeaponType.LONG_SWORD ||
+            currentWeapon == WeaponType.KNIGHT_SWORD) {
+
+            double range = currentWeapon.getRange();
+            double damage = currentWeapon.getDamage() * player.getAttackMultiplier();
+
+            meleeAttacks.add(new MeleeAttack(player, angle, range, damage)); // ✅ 수정됨
+            System.out.println("⚔️ 근접 공격 발생 (" + currentWeapon.getName() + ", 데미지: " + damage + ")");
+            return;
+        }
+
+
+        // [김선욱님 코드] 원거리 무기 총알 발사 처리
         if (currentWeapon == WeaponType.SHOTGUN) {
             int pellets = 5;
             double spread = Math.toRadians(15);
@@ -741,11 +953,95 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             double step = spread / (pellets - 1);
             for (int i = 0; i < pellets; i++) {
                 double a = start + step * i;
-                bullets.add(new Bullet(px, py, a, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange(), currentWeapon));
+                bullets.add(new Bullet(px, py, a, bulletSpeed,
+                    currentWeapon.getDamage(),
+                    currentWeapon.getRange(),
+                    currentWeapon));
             }
         } else {
-            bullets.add(new Bullet(px, py, angle, bulletSpeed, currentWeapon.getDamage(), currentWeapon.getRange(), currentWeapon));
+            bullets.add(new Bullet(px, py, angle, bulletSpeed,
+                currentWeapon.getDamage(),
+                currentWeapon.getRange(),
+                currentWeapon));
         }
+        
+
+        // ✅ 탄막이 실제로 발사될 때만 애니메이션 재생
+     currentWeapon.playCursorAnimation();
+        
+    }
+
+    /** [김선욱님 코드] 근접 공격 충돌 감지 */
+    private void checkMeleeCollisions() {
+        for (MeleeAttack ma : meleeAttacks) {
+            if (!ma.isActive()) continue;
+
+            Shape hitbox = ma.getHitbox();
+            if (hitbox == null) continue;  // ✅ NullPointer 방지 (중요!)
+
+            // [김선욱님 코드] 일반 몬스터와 충돌 체크
+            for (Enemy e : enemies) {
+                if (!e.alive) continue;
+                if (ma.hasHit(e)) continue; // ✅ 이미 맞은 적이면 스킵
+
+                double drawY_world = e.y - (e.hitHeight - 48);
+                double spriteCenterX = e.x + (e.drawWidth / 2.0);
+                double spriteCenterY = drawY_world + (e.drawHeight / 2.0);
+
+                Rectangle enemyRect = new Rectangle(
+                    (int)(spriteCenterX - e.hitWidth / 2.0),
+                    (int)(spriteCenterY - e.hitHeight / 2.0),
+                    (int)e.hitWidth,
+                    (int)e.hitHeight
+                );
+
+                if (hitbox.intersects(enemyRect)) {
+                    if (ma.hasHit(e)) continue;
+                    double dmg = ma.getDamage();
+                    e.takeDamage((int)dmg);
+                    ma.markHit(e);
+
+                    effects.add(new HitSpark(spriteCenterX, spriteCenterY)); // ✅ 오류 해결됨!
+
+                    Color dmgColor = dmg >= 50 ? Color.RED : Color.ORANGE;
+                    damageTexts.add(new DamageText(spriteCenterX, spriteCenterY - 10,
+                            String.valueOf((int)dmg), dmgColor));
+                    System.out.println("⚔️ 근접 공격 적중 → " + e.type + " (" + (int)dmg + " dmg)");
+                }
+
+            }
+
+            // [김선욱님 코드] 보스 충돌 체크
+            if (boss != null && boss.alive) {
+                if (ma.hasHit(boss)) continue; // ✅ 보스 중복 타격 방지
+
+                double drawY_world = boss.y - (boss.hitHeight - 48);
+                double spriteCenterX = boss.x + (boss.drawWidth / 2.0);
+                double spriteCenterY = drawY_world + (boss.drawHeight / 2.0);
+
+                Rectangle bossRect = new Rectangle(
+                    (int)(spriteCenterX - boss.hitWidth / 2.0),
+                    (int)(spriteCenterY - boss.hitHeight / 2.0),
+                    (int)boss.hitWidth,
+                    (int)boss.hitHeight
+                );
+
+                if (hitbox.intersects(bossRect)) {
+                    double dmg = ma.getDamage();
+                    boss.takeDamage((int)dmg);
+                    ma.markHit(boss); // ✅ 보스도 1회만 타격
+
+                    Color dmgColor = dmg >= 50 ? Color.RED : Color.ORANGE;
+                    damageTexts.add(new DamageText(spriteCenterX, spriteCenterY - 10,
+                            String.valueOf((int)dmg), dmgColor));
+
+                    System.out.println("💥 근접 공격 보스 적중 (" + (int)dmg + " dmg)");
+                }
+            }
+        }
+
+        // [김선욱님 코드] 수명 끝난 근접 공격 제거
+        meleeAttacks.removeIf(ma -> !ma.isActive());
     }
     
     // [김선욱님 코드] 총알-적 충돌 감지
@@ -834,6 +1130,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         keys.removeIf(key -> {
             if (!key.isPicked() && playerRect.intersects(key.getBounds())) {
                 key.pickUp();
+
+                player.currentKeyCount++;
+                System.out.println("열쇠 획득! 현재 개수 : " + player.currentKeyCount);
                 soundManager.playSE(12);
                 return true;
             }
@@ -841,15 +1140,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         });
     }
 
-    // [김선욱님 코드] 아이템 효과 적용
-    private void applyItemEffect(ItemType type) {
+     // [김선욱님 코드] 아이템 효과 적용
+     private void applyItemEffect(ItemType type) {
         if (type == null) return;
 
+        // 🔹 버프 아이템 (공격력/속도 등)
         if (type.getAttackBuff() != 0) {
             player.addAttackBonus(type.getAttackBuff());
-        }
-        if (type.getHpBuff() != 0) {
-            player.addMaxHP(type.getHpBuff());
         }
         if (type.getSpeedBuff() != 0) {
             player.addSpeedBonus(type.getSpeedBuff());
@@ -858,15 +1155,37 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             player.addAttackSpeedBonus(type.getAttackSpeedBuff());
         }
 
+        // 🔹 체력 관련 아이템
         if (type == ItemType.RED_POTION) {
+            // ❤️ 체력 +30 회복 (최대체력 초과 방지)
             player.heal(30);
+            damageTexts.add(new DamageText(player.x, player.y - 20, "❤️ HP +30", Color.PINK));
         }
-        if (type == ItemType.ELIXIR) {
+        else if (type == ItemType.ELIXIR) {
+            // 💖 체력 완전 회복
             player.heal(player.getMaxHP());
+            damageTexts.add(new DamageText(player.x, player.y - 20, "💖 체력 완전 회복!", Color.MAGENTA));
+        }
+        else if (type.getHpBuff() != 0) {
+            // ❗ 일반적인 HP 버프 아이템만 최대체력 증가
+            player.addMaxHP(type.getHpBuff());
         }
 
-        damageTexts.add(new DamageText(player.x, player.y - 20,
-                "+" + type.getName(), Color.CYAN));
+        // 🔹 특수 효과 아이템
+        if (type == ItemType.VAMPIRE_TOOTH) {
+            vampireEffectActive = true;
+            damageTexts.add(new DamageText(player.x, player.y - 20, "🩸 흡혈 효과 발동!", Color.PINK));
+        }
+
+        if (type == ItemType.GHOST_CLOAK) {
+            player.activateGhostCloak();
+            damageTexts.add(new DamageText(player.x, player.y - 20, "👻 무적 발동!", Color.CYAN));
+        }
+
+        // 🔹 공통 이펙트 표시 (중복 방지)
+        if (type != ItemType.RED_POTION && type != ItemType.ELIXIR) {
+            damageTexts.add(new DamageText(player.x, player.y - 20, "+" + type.getName(), Color.CYAN));
+        }
     }
     
     // [적 공격 체크] 일반 적의 근접 공격 및 투사체 충돌 체크
@@ -899,25 +1218,153 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             }
         }
     }
-    
-    // [김선욱님 코드] 무기 변경
-    private void changeWeapon(boolean next) {
-        WeaponType[] weapons = WeaponType.values();
-        int currentIdx = -1;
-        for (int i = 0; i < weapons.length; i++) {
-            if (weapons[i] == currentWeapon) {
-                currentIdx = i;
-                break;
-            }
-        }
-        if (currentIdx == -1) return;
+
+    // ---------------------------------------------------------
+    // [민정 추가] 다음 스테이지 이동 시스템
+    // ---------------------------------------------------------
+
+    // 1. 현재 좌표의 타일 종류를 가져오는 메서드
+    public char getTileChar(int worldX, int worldY) {
+        if (currentRoom == null) return ' '; 
+
+        int tileX = worldX / Constants.TILE_SIZE;
+        int tileY = worldY / Constants.TILE_SIZE;
+
+        char[][] map = currentRoom.getMap();
         
-        if (next) {
-            currentIdx = (currentIdx + 1) % weapons.length;
-        } else {
-            currentIdx = (currentIdx - 1 + weapons.length) % weapons.length;
+        if (tileY >= 0 && tileY < map.length && tileX >= 0 && tileX < map[0].length) {
+            return map[tileY][tileX];
         }
-        currentWeapon = weapons[currentIdx];
+        return ' ';
+    }
+
+    // 2. 맵 교체 및 초기화 메서드
+    public void nextStage() {
+        int currentStage = MapLoader.getCurrentStage();
+        int nextStage = currentStage + 1;
+
+        // 5탄 이후 엔딩 처리
+        if (nextStage > map.StageInfo.MAX_STAGE) {
+            System.out.println("게임 클리어!");
+            gameState = titleState; 
+            soundManager.stop();
+            soundManager.playMusic(29); 
+            return;
+        }
+
+        // 로딩 화면 시작
+        gameState = loadingState;
+        loadingStartTime = System.currentTimeMillis();
+
+        // 맵 데이터 불러오기
+        MapLoader.loadAllRooms(nextStage);
+        currentRoom = MapLoader.getRoom(0); 
+
+        // ✅ 새로운 스테이지에서는 방 클리어/아이템 정보 초기화
+        clearedRooms.clear();
+        roomItems.clear();
+
+        // 플레이어 위치 초기화 (setupGame과 동일한 위치)
+        player.x = Constants.TILE_SIZE * 10;
+        player.y = Constants.TILE_SIZE * 6;
+        
+        // 중요: 다음 판으로 가면 열쇠와 적들을 초기화
+        player.currentKeyCount = 0; 
+        keys.clear();
+        bullets.clear();
+        items.clear();
+        damageTexts.clear();
+        enemies.clear(); 
+        
+        playStageMusic();
+        
+        System.out.println("스테이지 " + nextStage + " 시작!");
+    }
+
+    private void updateCursorToWeapon() {
+        try {
+            // ✅ Player 기준으로 현재 무기 타입을 다시 동기화
+            if (player == null || player.getCurrentWeapon() == null) return;
+            currentWeapon = player.getCurrentWeapon().getType();
+
+            BufferedImage img = currentWeapon.getWeaponImage();
+            if (img == null) {
+                System.out.println("⚠️ weapon image == null → 기본 커서");
+                setCursor(Cursor.getDefaultCursor());
+                return;
+            }
+
+            // ✅ OS가 허용하는 커서 크기 조회
+            Toolkit tk = Toolkit.getDefaultToolkit();
+            Dimension best = tk.getBestCursorSize(img.getWidth(), img.getHeight());
+            // 일부 환경은 0,0을 돌려줌(커스텀 커서 미지원)
+            if (best.width == 0 || best.height == 0) {
+                System.out.println("⚠️ 시스템이 커스텀 커서를 지원하지 않음 → CROSSHAIR로 테스트");
+                setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+                return;
+            }
+
+            // ✅ 원하는 확대 배율(2~3배 권장) → 하지만 OS 허용치로 clamp
+            int desiredScale = 2; // 필요시 3으로 올려도 됩니다
+            int reqW = Math.min(img.getWidth() * desiredScale, best.width);
+            int reqH = Math.min(img.getHeight() * desiredScale, best.height);
+            reqW = Math.max(16, reqW);
+            reqH = Math.max(16, reqH);
+
+            // 부드러운 스케일링
+            BufferedImage scaled = new BufferedImage(reqW, reqH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = scaled.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.drawImage(img, 0, 0, reqW, reqH, null);
+            g2.dispose();
+
+            // ✅ 핫스팟(무기 손잡이 쪽 느낌으로 아래쪽)
+            Point hotspot = new Point(reqW / 2, (int)(reqH * 0.75));
+            // 핫스팟은 반드시 이미지 영역 안이어야 함
+            hotspot.x = Math.max(0, Math.min(hotspot.x, reqW - 1));
+            hotspot.y = Math.max(0, Math.min(hotspot.y, reqH - 1));
+
+            Cursor custom = tk.createCustomCursor(scaled, hotspot, currentWeapon.getName());
+
+            // ✅ 패널 + 상위 윈도우 둘 다에 적용 (윈도우가 떠있을 때)
+            SwingUtilities.invokeLater(() -> {
+                setCursor(custom);
+                Window w = SwingUtilities.getWindowAncestor(this);
+                if (w != null) w.setCursor(custom);
+            });
+
+            System.out.println("🖱️ 커서 적용: " + currentWeapon.getName()
+                    + "  (" + reqW + "x" + reqH + ", best=" + best.width + "x" + best.height + ")");
+        } catch (Exception e) {
+            System.out.println("⚠️ 커서 적용 실패: " + e.getMessage());
+            SwingUtilities.invokeLater(() -> setCursor(Cursor.getDefaultCursor()));
+        }
+        
+        setCursor(Toolkit.getDefaultToolkit().createCustomCursor(
+        	    new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB),
+        	    new Point(0, 0),
+        	    "invisibleCursor"
+        	));
+    }
+
+    // [김선욱님 코드] 무기 변경
+    //  - Player 인벤토리에서 실제 보유 중인 무기만 순환
+    private void changeWeapon(boolean next) {
+        if (player == null) return;
+
+        // 1) Player 인벤토리에서 현재 무기 인덱스 변경
+        player.swapWeapon();
+
+        // 2) Player 기준으로 currentWeapon을 다시 동기화 + 커서 갱신
+        updateCursorToWeapon();
+    }
+
+    public void syncCurrentWeaponFromPlayer() {
+        if (player == null) return;
+        Weapon w = player.getCurrentWeapon();
+        if (w != null) {
+            currentWeapon = w.getType();
+        }
     }
     
     // [김민정님 코드] Getter (UIRenderer에서 사용)
@@ -978,6 +1425,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             }
         }
         
+        // [김선욱님 코드] 근접 공격(검기) 그리기
+        for (MeleeAttack ma : meleeAttacks) {
+            ma.draw(g2, cameraX, cameraY); // ✅ 카메라 보정 전달
+        }
+        
         // [김선욱님 코드] 아이템 그리기
         for (Item item : items) {
             Rectangle bounds = item.getBounds();
@@ -1020,14 +1472,39 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             g2Copy.dispose();
         }
 
+        // 💥 [김선욱님 코드] 히트 스파크 이펙트 그리기
+        for (HitSpark s : effects) {
+            s.draw(g2, cameraX, cameraY);
+        }
+        
+        for (Box box : boxes) {
+            box.draw(g2, cameraX, cameraY);
+        }
+
+        
+        if (currentWeapon != null) {
+            currentWeapon.drawCursor(g2, mouseX, mouseY, false);
+
+            // 🔹 애니메이션이 끝났는지 감시
+            if (!currentWeapon.isAnimating() && isWeaponAnimating) {
+                isWeaponAnimating = false;
+            }
+        }
+        
         // [김민정님 코드] HUD 그리기 (기존 drawPlayerHUD 대신 ui.draw 사용)
         ui.draw(g2);
+        if (minimap != null && currentRoom != null) {
+            minimap.render(g2, currentRoom.getRoomId());
+        }
         g2.dispose();
     }
     
     // [서상원님 코드] 키보드 입력 처리
     @Override
     public void keyTyped(KeyEvent e) {
+        int code = e.getKeyCode();
+        if (code == KeyEvent.VK_G) keyG = true;
+        if (code == KeyEvent.VK_F) keyF = true;
     }
 
     @Override
@@ -1047,6 +1524,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             if (code == KeyEvent.VK_S) keyS = true;
             if (code == KeyEvent.VK_A) keyA = true;
             if (code == KeyEvent.VK_D) keyD = true;
+            if (code == KeyEvent.VK_G) keyG = true;
+            if (code == KeyEvent.VK_F) keyF = true;
             
             if (code == KeyEvent.VK_1) System.out.println("소모품 1번 선택");
             if (code == KeyEvent.VK_2) System.out.println("소모품 2번 선택");
@@ -1079,6 +1558,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         if (code == KeyEvent.VK_S) keyS = false;
         if (code == KeyEvent.VK_A) keyA = false;
         if (code == KeyEvent.VK_D) keyD = false;
+        if (code == KeyEvent.VK_G) keyG = false;
+        if (code == KeyEvent.VK_F) keyF = false;
     }
     
     // [김선욱님 코드] 마우스 위치 추적
@@ -1096,7 +1577,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     // [김선욱님 코드] 총알 발사 (마우스 왼쪽 버튼)
     @Override
     public void mousePressed(MouseEvent e) { 
-        if (SwingUtilities.isLeftMouseButton(e)) shoot(); 
+        if (SwingUtilities.isLeftMouseButton(e)) {
+            shoot();
+            if (currentWeapon != null) {
+                currentWeapon.playCursorAnimation();
+                isWeaponAnimating = true; // 🔹 애니메이션 시작
+            }
+        }
     }
     
     @Override

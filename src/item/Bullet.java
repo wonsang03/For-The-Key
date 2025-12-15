@@ -1,6 +1,7 @@
 package item;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ public class Bullet {
     private BufferedImage image;
     private WeaponType weaponType;
     private static BufferedImage spriteSheet;
+    private double angle;
 
     private static final int SPRITE_W = 32;
     private static final int SPRITE_H = 32;
@@ -26,14 +28,16 @@ public class Bullet {
         this.damage = damage;
         this.range = range;
         this.weaponType = weaponType;
+        this.angle = angle;
 
         this.dx = Math.cos(angle) * speed;
         this.dy = Math.sin(angle) * speed;
 
         loadSpriteSheet();
-        loadSpriteRegion(weaponType);
+        setSpriteRegion(weaponType);
     }
 
+    /** 🔹 스프라이트 시트 로드 */
     private static void loadSpriteSheet() {
         if (spriteSheet != null) return;
         try {
@@ -44,8 +48,8 @@ public class Bullet {
         }
     }
 
-    // [김선욱님 코드] WeaponType별 스프라이트 좌표 지정
-    private void loadSpriteRegion(WeaponType type) {
+    /** 🔹 무기 타입별 스프라이트 좌표 지정 */
+    private void setSpriteRegion(WeaponType type) {
         int spriteX = 0;
         int spriteY = 0;
         int spriteW = 32;
@@ -55,30 +59,28 @@ public class Bullet {
             case PISTOL:
                 spriteX = 1921;
                 spriteY = 805;
+                spriteW = 25;
+                spriteH = 25;
                 break;
+
             case SHOTGUN:
-                spriteX = 1961;
-                spriteY = 805;
+                spriteX = 522;
+                spriteY = 839;
+                spriteW = 25;
+                spriteH = 25;
                 break;
+
             case SNIPER:
-                spriteX = 2001;
-                spriteY = 805;
+                spriteX = 34;
+                spriteY = 808;
+                spriteW = 25;
+                spriteH = 25;
                 break;
-            case DAGGER:
-                spriteX = 2041;
-                spriteY = 805;
-                break;
-            case LONG_SWORD:
-                spriteX = 2081;
-                spriteY = 805;
-                break;
-            case KNIGHT_SWORD:
-                spriteX = 2121;
-                spriteY = 805;
-                break;
+
             default:
-                spriteX = 0;
-                spriteY = 0;
+                // ⚠️ 근접 무기(DAGGER, LONG_SWORD, KNIGHT_SWORD)는 탄막 비활성화
+                image = null;
+                return;
         }
 
         if (spriteSheet != null) {
@@ -93,7 +95,7 @@ public class Bullet {
         }
     }
 
-    // [김선욱님 코드] 탄환 이동 업데이트
+    /** 🔹 탄환 이동 업데이트 */
     public void update() {
         x += dx;
         y += dy;
@@ -101,12 +103,21 @@ public class Bullet {
         if (distanceTraveled >= range) active = false;
     }
 
-    // [김선욱님 코드] 탄환 그리기
+    /** 🔹 탄환 그리기 (방향 회전) */
     public void draw(Graphics2D g2) {
         if (!active) return;
 
         if (image != null) {
-            g2.drawImage(image, (int)x, (int)y, SPRITE_W, SPRITE_H, null);
+            AffineTransform old = g2.getTransform();
+
+            // 중심 기준 회전
+            AffineTransform transform = new AffineTransform();
+            transform.translate(x + SPRITE_W / 2.0, y + SPRITE_H / 2.0);
+            transform.rotate(angle);
+            transform.translate(-SPRITE_W / 2.0, -SPRITE_H / 2.0);
+
+            g2.drawImage(image, transform, null);
+            g2.setTransform(old);
         } else {
             g2.setColor(Color.YELLOW);
             g2.fillOval((int)x, (int)y, 10, 10);

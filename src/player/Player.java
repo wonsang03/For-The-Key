@@ -3,13 +3,19 @@ package player;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;  // 민정 추가
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import java.util.ArrayList;  // 민정 추가
+//import java.util.Random;     // 민정 추가
+import java.util.Iterator;  // 민정 추가
 
 import common.Constants;
 import common.Entity;
 import main.GamePanel;
+import item.Weapon;  // 민정 추가
+import item.WeaponType;  //민정 추가
 
 public class Player extends Entity {
 
@@ -18,6 +24,27 @@ public class Player extends Entity {
     
     BufferedImage[][] animations;
     int totalFrames = 4;
+    
+    // [민정 추가] 아이템 획득 애니메이션용 변수
+    public boolean obtainingItem = false; // 현재 아이템 자랑 중인가?
+    private int obtainCounter = 0;        // 시간(타이머) 체크용
+    private BufferedImage obtainedImage;  // 머리 위에 띄울 이미지
+    
+    // 민정 추가 : 아이템 슬롯 관련
+    public int redPotionCount = 0;      // 빨간 물약 개수
+    public int elixirCount = 0;         // 엘릭서 개수
+    public int selectedItemIndex = 0;   // 0: 1번 슬롯, 1: 2번 슬롯
+    
+    // 민정 추가
+    public int currentKeyCount = 0; // 현재 획득한 열쇠 개수
+    
+    // [민정 추가] 무기 인벤토리 및 현재 무기 번호
+    public ArrayList<Weapon> inventory = new ArrayList<>();
+    public int currentWeaponIndex = 0;
+    
+    // [민정 추가] 화면 중앙 좌표 (플레이어 그릴 위치)
+    public final int screenX;
+    public final int screenY;
     
     // [김선욱님 코드] 스탯 시스템: 아이템 효과 적용을 위한 필드 추가
     private int maxHP = 100;
@@ -37,16 +64,28 @@ public class Player extends Entity {
         this.gp = gp;
         this.keyH = keyH;
         
+        // [민정 추가] 화면 정중앙 좌표 계산 (화면크기 / 2 - 타일크기 / 2)
+        screenX = Constants.WINDOW_WIDTH / 2 - (Constants.TILE_SIZE / 2);
+        screenY = Constants.WINDOW_HEIGHT / 2 - (Constants.TILE_SIZE / 2);
+        
         setDefaultValues();
         getPlayerImage();
     }
 
+    // [민정 수정]
     public void setDefaultValues() {
         x = Constants.TILE_SIZE * 5;
         y = Constants.TILE_SIZE * 5;
         speed = (int)baseSpeed;
         direction = "down";
         spriteNum = 0;
+
+        // [민정 추가] 게임 시작 시 Dagger와 Pistol 지급
+        inventory.clear();
+        inventory.add(new Weapon(WeaponType.KNIGHT_SWORD)); // 0번: 단검 (기본)
+        inventory.add(new Weapon(WeaponType.PISTOL)); // 1번: 권총
+        
+        currentWeaponIndex = 0; // 처음엔 0번(단검) 들기
     }
     
     public void getPlayerImage() {
@@ -92,7 +131,21 @@ public class Player extends Entity {
     }
 
     @Override
-    public void update() {
+    public void update() {	
+    	// [민정 추가] 아이템 획득 중이면 움직임을 멈추고 타이머만 돌림
+        if (obtainingItem) {
+            obtainCounter++;
+            if (obtainCounter > 120) { 
+                obtainingItem = false;
+                obtainCounter = 0;
+            }
+            return; // 아래의 이동 코드를 실행하지 않고 여기서 끝냄
+        }
+        
+        checkItemCollision(); // [민정 추가] : 아이템 충돌 체크 함수 호출
+        
+        
+        
         boolean isMoving = false;
         int moveX = 0;
         int moveY = 0;
@@ -160,11 +213,46 @@ public class Player extends Entity {
                 invincibleCounter = 0;
             }
         }
+        
+        // [민정 추가] 아이템 슬롯 변경 로직
+        if (keyH.onePressed) {
+            selectedItemIndex = 0; // 1번 키 누르면 -> 0번 인덱스(빨간물약) 선택
+        }
+        else if (keyH.twoPressed) {
+            selectedItemIndex = 1; // 2번 키 누르면 -> 1번 인덱스(엘릭서) 선택
+        }
+        
+        checkNextStage(); // [민정 추가] : 스테이지 이동 (F키)
+        checkWeaponPickUp(); // [민정 추가] : 무기 줍기 (G키)
     }
 
     @Override
     public void draw(Graphics2D g2) {
         BufferedImage image = null;
+        
+        // [민정 추가] 아이템 획득 애니메이션
+        if (obtainingItem) {
+            // 1. 플레이어는 정면 모습
+            if (animations != null && animations.length > 0) {
+                image = animations[0][0]; 
+            }
+            
+            // 2. ★ 핵심 수정 ★ 
+            // 복잡한 계산(screenX, cameraX) 다 필요 없습니다.
+            // 아래 걷는 코드와 똑같이 그냥 'x', 'y'를 쓰면 됩니다!
+            
+            // 3. 플레이어 그리기
+            if (image != null) {
+                g2.drawImage(image, (int)x, (int)y, Constants.TILE_SIZE, Constants.TILE_SIZE, null);
+            }
+            
+            // 4. 머리 위에 획득한 아이템 그리기 (y 좌표만 조금 위로)
+            if (obtainedImage != null) {
+                g2.drawImage(obtainedImage, (int)x, (int)y - 48, Constants.TILE_SIZE, Constants.TILE_SIZE, null);
+            }
+            
+            return; // 여기서 함수 끝!
+        }
 
         // 1. 방향에 따른 이미지 선택
         int colDir = 0; 
@@ -271,6 +359,190 @@ public class Player extends Entity {
             this.hp = 0;
             // gp.soundManager.playSE(21); // (필요 시 주석 해제) 플레이어 사망음
             System.out.println("플레이어 사망!");
+        }
+    }
+
+    // [특수 효과] 유령 망토 (GHOST_CLOAK) 사용 시 무적 상태 활성화
+    public void activateGhostCloak() {
+        // 이미 invincible 플래그와 타이머 로직이 있으므로 여기서는 시작만 해 준다.
+        this.invincible = true;
+        this.invincibleCounter = 0;
+    }
+    
+    // [민정 추가] 무기 교체 (Q키 누르면 호출)
+    public void swapWeapon() {
+        if (inventory.isEmpty()) return;
+
+        currentWeaponIndex++;
+        // 마지막 무기를 넘어가면 다시 0번(처음)으로 돌아옴
+        if (currentWeaponIndex >= inventory.size()) {
+            currentWeaponIndex = 0;
+        }
+        System.out.println("무기 교체! 현재 무기: " + inventory.get(currentWeaponIndex).getName());
+
+        // GamePanel 쪽 currentWeapon(WeaponType)도 함께 동기화
+        if (gp != null) {
+            gp.syncCurrentWeaponFromPlayer();
+        }
+    }
+
+    // [민정 추가] 현재 들고 있는 무기 가져오기 (공격할 때 사용)
+    public Weapon getCurrentWeapon() {
+        if (inventory.isEmpty()) return null;
+        return inventory.get(currentWeaponIndex);
+    }
+    
+    // [추가] 현재 들고 있지 않은 '다음 무기'를 찾는 함수
+    public Weapon getNextWeapon() {
+        // 1. 무기가 1개 이하(없거나 하나뿐)라면 '다음 무기'는 없음
+        if (inventory.size() <= 1) return null;
+
+        // 2. 다음 무기의 번호 계산 (현재 번호 + 1)
+        int nextIndex = currentWeaponIndex + 1;
+        
+        // 3. 마지막 번호를 넘어가면 다시 0번으로 (순환)
+        if (nextIndex >= inventory.size()) {
+            nextIndex = 0;
+        }
+        // 4. 해당 번호의 무기를 리턴
+        return inventory.get(nextIndex);
+    }
+    
+    // [추가] X 타일 위에서 F키 입력 시 스테이지 이동 시도
+    public void checkNextStage() {
+        int centerX = x + common.Constants.TILE_SIZE / 2;
+        int centerY = y + common.Constants.TILE_SIZE / 2;
+
+        char currentTile = gp.getTileChar(centerX, centerY); 
+
+        // X 타일 위에서 F키를 눌렀는지 확인
+        if (currentTile == 'X' && gp.keyH.fPressed) {
+
+            int currentStage = map.MapLoader.getCurrentStage();
+            int needed = map.StageInfo.getRequiredKeyCount(currentStage);
+
+            // 열쇠 개수 확인
+            if (currentKeyCount >= needed) {
+                System.out.println("스테이지 클리어! (필요 열쇠: " + needed + ")");
+
+                gp.soundManager.playSE(14); // 철컥 소리
+                gp.soundManager.playSE(11); // 클리어 소리
+
+                gp.nextStage(); // 다음 스테이지로 이동
+
+                gp.keyH.fPressed = false; // 중복 입력 방지
+            } else {
+                System.out.println("열쇠가 부족합니다! (현재: " + currentKeyCount + " / 필요: " + needed + ")");
+            }
+        }
+    }
+    
+    // 상자 열기 (테스트용 등)
+    public void openChest() {
+        java.util.Random random = new java.util.Random();
+        if (random.nextInt(10) < 6) { 
+            WeaponType[] types = WeaponType.values();
+            WeaponType type = types[random.nextInt(types.length)];
+            dropWeaponOnGround(new Weapon(type), this.x, this.y + 40); 
+        }
+    }
+
+    public void dropWeaponOnGround(Weapon w, int dropX, int dropY) {
+        // [확인됨] Weapon의 worldX, worldY는 public임
+        w.worldX = dropX;
+        w.worldY = dropY;
+        
+        // [확인됨] GamePanel의 groundWeapons는 public임
+        if (gp.groundWeapons != null) {
+             gp.groundWeapons.add(w);
+        }
+    }
+
+    // [G키] 무기 줍기
+    public void checkWeaponPickUp() {
+        // [확인됨] KeyHandler에 gPressed 있음
+        if (gp.keyH.gPressed) { 
+            for (int i = 0; i < gp.groundWeapons.size(); i++) {
+                Weapon w = gp.groundWeapons.get(i);
+                
+                double dist = Math.sqrt(Math.pow(x - w.worldX, 2) + Math.pow(y - w.worldY, 2));
+                
+                if (dist < 50) { 
+                    swapWeapon(w); 
+                    gp.keyH.gPressed = false; // 중복 방지
+                    break; 
+                }
+            }
+        }
+    }
+
+    // 인벤토리 슬롯 관리 및 무기 교체 로직
+    public void swapWeapon(Weapon newWeapon) {
+        Weapon droppedWeapon = null;
+        int slotIndex = 0;
+
+        // [확인됨] WeaponType에 isRanged() 있음
+        if (newWeapon.getType().isRanged()) {
+            slotIndex = 1; // 원거리 무기는 1번 슬롯 (2번째 칸)
+        } else {
+            slotIndex = 0; // 근거리 무기는 0번 슬롯 (1번째 칸)
+        }
+
+        // 인벤토리 크기 확보
+        while (inventory.size() <= slotIndex) {
+            inventory.add(null);
+        }
+
+        // 기존 슬롯에 무기가 있었다면 빼두기
+        if (inventory.size() > slotIndex) droppedWeapon = inventory.get(slotIndex);
+        
+        // 새 무기 장착
+        if (inventory.size() > slotIndex) inventory.set(slotIndex, newWeapon);
+        else inventory.add(newWeapon);
+        
+        // 바닥에 있는 무기 리스트에서 삭제
+        gp.groundWeapons.remove(newWeapon); 
+        
+        // 기존 무기가 있었다면 바닥에 떨구기
+        if (droppedWeapon != null) {
+            dropWeaponOnGround(droppedWeapon, this.x, this.y); 
+        } 
+        System.out.println("무기 획득: " + newWeapon.getName());
+
+        // 새 무기 장착 후에도 GamePanel 쪽 무기 타입과 동기화
+        if (gp != null) {
+            gp.syncCurrentWeaponFromPlayer();
+        }
+    }
+    
+    // [민정 추가] 상자가 열릴 때 호출할 함수
+    public void playObtainEffect(BufferedImage itemImage) {
+        this.obtainingItem = true;
+        this.obtainedImage = itemImage;
+        this.obtainCounter = 0;
+        
+//        // 획득 효과음 재생 (15번: item_get.wav)
+//        gp.playSE(15); 
+    }
+    
+    // [민정 추가] 아이템 충돌 체크 함수 (이 코드를 파일 맨 아래에 넣으세요!)
+    public void checkItemCollision() {
+        Iterator<item.Item> iterator = gp.items.iterator();
+        while (iterator.hasNext()) {
+            item.Item it = iterator.next();
+            if (it != null) {
+                Rectangle playerArea = new Rectangle((int)this.x, (int)this.y, Constants.TILE_SIZE, Constants.TILE_SIZE);
+                if (playerArea.intersects(it.getBounds()) && !it.isPicked()) {
+                    
+                    // 1. 여기서 true로 바꿔줘야 위의 update()에서 멈춥니다!
+                    obtainingItem = true; 
+                    
+                    // 2. 획득 효과(이미지 설정 등)
+                    playObtainEffect(it.getItemImage());
+                    it.pickUp();
+                    iterator.remove(); 
+                }
+            }
         }
     }
 }

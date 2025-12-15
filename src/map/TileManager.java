@@ -1,21 +1,28 @@
 package map;
 
 import common.Constants;
-
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import main.GamePanel; // [김선욱님 코드] 상자 등록용 GamePanel 참조 추가
 
 // [서충만님 코드] 타일 렌더링을 담당하는 클래스
 public class TileManager {
 
     private boolean useSprites = false;
+    private GamePanel gamePanel; // [김선욱님 코드] Box 등록을 위한 참조
 
-    public TileManager() {
+    // [김선욱님 코드] 생성자 수정 (GamePanel 연결)
+    public TileManager(GamePanel panel) {
+        this.gamePanel = panel;
         TileSprites.loadSprites();
         useSprites = TileSprites.isLoaded();
     }
 
-    // [서충만님 코드] 맵을 화면에 렌더링
+    public TileManager() {
+		// TODO Auto-generated constructor stub
+	}
+
+	// [서충만님 코드] 맵을 화면에 렌더링
     public void render(Graphics2D g2, char[][] map) {
         if (map == null || map.length == 0) {
             return;
@@ -45,6 +52,7 @@ public class TileManager {
             }
         }
 
+        // [김선욱님 코드] 상자(C) 스프라이트 + Box 객체 등록
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 char tile = map[y][x];
@@ -55,6 +63,12 @@ public class TileManager {
                     BufferedImage chestSprite = TileSprites.getChestTile();
                     if (chestSprite != null) {
                         g2.drawImage(chestSprite, screenX, screenY, tileSize, tileSize, null);
+
+                        // [김선욱님 코드] Box 객체를 GamePanel에 자동 등록 (중복 방지)
+                        if (gamePanel != null && !gamePanel.boxExistsAt(screenX, screenY)) {
+                            gamePanel.addBoxAt(screenX, screenY);
+                            System.out.println("📦 상자 등록됨: (" + screenX + ", " + screenY + ")");
+                        }
                     }
                 }
             }
