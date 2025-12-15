@@ -92,6 +92,8 @@ public class UIRenderer {
             drawGameOverScreen(g2);
         } else if (gp.gameState == gp.loadingState) {
             drawLoadingScreen(g2);
+        } else if (gp.gameState == gp.gameClearState) {
+            drawGameClearScreen(g2);
         }
     }
 
@@ -326,6 +328,10 @@ public class UIRenderer {
         // 2번 슬롯: 엘릭서 (인덱스 1) - 옆으로 한 칸 띄움
         drawSingleSlot(g2, startX + slotSize + 15, startY, slotSize, slotSize, 
                        ItemType.ELIXIR, gp.player.elixirCount, 1, "2");
+
+        // 3번 슬롯: 유령 망토 (인덱스 2) - 옆으로 한 칸 띄움
+        drawSingleSlot(g2, startX + (slotSize + 15) * 2, startY, slotSize, slotSize, 
+                       ItemType.GHOST_CLOAK, gp.player.ghostCloakCount, 2, "3");
     }
 
     // 슬롯 1개를 그리는 도우미 메서드
@@ -409,6 +415,56 @@ public class UIRenderer {
             if (blinkCounter % 60 < 40) {
                 drawKeyButton(g2, "R", startX + text1Len + spacing, BaseY - 35, keyWidth, 50);
             }
+        }
+    }
+
+    // 🔹 보스 처치 시 클리어 화면 그리기
+    public void drawGameClearScreen(Graphics2D g2) {
+        int screenW = Constants.WINDOW_WIDTH;
+        int screenH = Constants.WINDOW_HEIGHT;
+
+        // 배경 (반투명 검정)
+        g2.setColor(new Color(0, 0, 0, 200));
+        g2.fillRect(0, 0, screenW, screenH);
+        
+        // 클리어 텍스트
+        g2.setFont(new Font("Arial", Font.BOLD, 90));
+        String text = "GAME CLEAR!";
+        int x = getXforCenteredText(text, g2);
+        int y = screenH / 2 - 50;
+
+        g2.setColor(Color.BLACK);
+        g2.drawString(text, x + 7, y + 7);
+        g2.setColor(new Color(255, 215, 0)); // GOLD 색상
+        g2.drawString(text, x, y);
+
+        // 스테이지 정보 (한글 폰트 사용)
+        g2.setFont(new Font("Malgun Gothic", Font.BOLD, 40));
+        String stageText = "스테이지 클리어!";
+        int stageX = getXforCenteredText(stageText, g2);
+        g2.setColor(Color.WHITE);
+        g2.drawString(stageText, stageX, y + 80);
+
+        // 안내 텍스트
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 30F));
+        String text1 = "Press";
+        String text2 = "to Continue";
+
+        int text1Len = (int) g2.getFontMetrics().getStringBounds(text1, g2).getWidth();
+        int text2Len = (int) g2.getFontMetrics().getStringBounds(text2, g2).getWidth();
+        int keyWidth = 60;
+        int spacing = 20;
+
+        int totalWidth = text1Len + spacing + keyWidth + spacing + text2Len;
+        int startX = (screenW - totalWidth) / 2;
+        int baseY = screenH / 2 + 150;
+
+        g2.setColor(Color.WHITE);
+        g2.drawString(text1, startX, baseY);
+        g2.drawString(text2, startX + text1Len + spacing + keyWidth + spacing, baseY);
+        
+        if (blinkCounter % 60 < 40) {
+            drawKeyButton(g2, "R", startX + text1Len + spacing, baseY - 35, keyWidth, 50);
         }
     }
 

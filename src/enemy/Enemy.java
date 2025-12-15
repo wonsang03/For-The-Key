@@ -93,15 +93,6 @@ public class Enemy {
                 this.drawHeight = 70;
                 this.spriteDefaultFacesLeft = false;
                 break;
-            case ORC:
-                this.attackRange = 100;
-                this.moveRange = 800;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
-                this.spriteDefaultFacesLeft = false;
-                break;
             case MINOTAUR:
                 this.attackRange = 200;
                 this.moveRange = 500;
@@ -193,10 +184,10 @@ public class Enemy {
             case HELL_KNIGHT:
                 this.attackRange = 200;
                 this.moveRange = 500;
-                this.hitWidth = 90; 
-                this.hitHeight = 70;
-                this.drawWidth = 120; 
-                this.drawHeight = 90;
+                this.hitWidth = 200; 
+                this.hitHeight = 150;
+                this.drawWidth = 200; 
+                this.drawHeight = 150;
                 this.spriteDefaultFacesLeft = false;
                 break;
             case YETI:

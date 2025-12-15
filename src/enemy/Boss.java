@@ -90,7 +90,7 @@ public class Boss {
     public Boss(double startX, double startY, SoundManager soundManager) {
         this.x = startX;
         this.y = startY;
-        this.maxHp = 10000;
+        this.maxHp = 20000;
         this.hp = this.maxHp;
         this.soundManager = soundManager;
         

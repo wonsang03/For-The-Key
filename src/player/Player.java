@@ -33,7 +33,8 @@ public class Player extends Entity {
     // 민정 추가 : 아이템 슬롯 관련
     public int redPotionCount = 0;      // 빨간 물약 개수
     public int elixirCount = 0;         // 엘릭서 개수
-    public int selectedItemIndex = 0;   // 0: 1번 슬롯, 1: 2번 슬롯
+    public int ghostCloakCount = 0;     // 유령 망토 개수
+    public int selectedItemIndex = 0;   // 0: 1번 슬롯, 1: 2번 슬롯, 2: 3번 슬롯(유령 망토)
     
     // 민정 추가
     public int currentKeyCount = 0; // 현재 획득한 열쇠 개수
@@ -59,6 +60,10 @@ public class Player extends Entity {
     // [김민정님 코드] 무적 시간(피격 효과) 관련 변수
     public boolean invincible = false; // true면 무적 상태 (데미지 안 입음)
     public int invincibleCounter = 0;  // 무적 시간 타이머
+    
+    // 🔹 유령 망토 무적 시간 (5초 = 300프레임, 60 FPS 기준)
+    private int ghostCloakTimer = 0;
+    private static final int GHOST_CLOAK_DURATION = 300; // 5초
 
     public Player(GamePanel gp, KeyHandler keyH) {
         this.gp = gp;
@@ -82,7 +87,7 @@ public class Player extends Entity {
 
         // [민정 추가] 게임 시작 시 Dagger와 Pistol 지급
         inventory.clear();
-        inventory.add(new Weapon(WeaponType.KNIGHT_SWORD)); // 0번: 단검 (기본)
+        inventory.add(new Weapon(WeaponType.DAGGER)); // 0번: 단검 (기본)
         inventory.add(new Weapon(WeaponType.PISTOL)); // 1번: 권총
         
         currentWeaponIndex = 0; // 처음엔 0번(단검) 들기
@@ -135,17 +140,16 @@ public class Player extends Entity {
     	// [민정 추가] 아이템 획득 중이면 움직임을 멈추고 타이머만 돌림
         if (obtainingItem) {
             obtainCounter++;
-            if (obtainCounter > 120) { 
+            // 🔹 무기 줍는 애니메이션 시간 증가 (기존 120 → 180, 약 3초)
+            if (obtainCounter > 180) { 
                 obtainingItem = false;
                 obtainCounter = 0;
             }
             return; // 아래의 이동 코드를 실행하지 않고 여기서 끝냄
         }
         
-        checkItemCollision(); // [민정 추가] : 아이템 충돌 체크 함수 호출
-        
-        
-        
+        // 아이템 충돌 체크는 GamePanel.checkItemPickups()에서 처리
+
         boolean isMoving = false;
         int moveX = 0;
         int moveY = 0;
@@ -205,12 +209,22 @@ public class Player extends Entity {
             spriteNum = 0; 
         }
 
-        // [김민정님 코드] 무적 시간 관리 (약 1초 동안 무적 유지 후 해제)
+        // [김민정님 코드] 무적 시간 관리
         if (invincible == true) {
-            invincibleCounter++;
-            if (invincibleCounter > 20) { // 60프레임 = 약 1초
-                invincible = false;
-                invincibleCounter = 0;
+            // 🔹 유령 망토 무적 시간이 남아있으면 유지
+            if (ghostCloakTimer > 0) {
+                ghostCloakTimer--;
+                if (ghostCloakTimer <= 0) {
+                    invincible = false;
+                    System.out.println("👻 유령 망토 무적 종료");
+                }
+            } else {
+                // 일반 피격 무적 (약 0.33초)
+                invincibleCounter++;
+                if (invincibleCounter > 20) { // 60프레임 = 약 1초
+                    invincible = false;
+                    invincibleCounter = 0;
+                }
             }
         }
         
@@ -220,6 +234,9 @@ public class Player extends Entity {
         }
         else if (keyH.twoPressed) {
             selectedItemIndex = 1; // 2번 키 누르면 -> 1번 인덱스(엘릭서) 선택
+        }
+        else if (keyH.threePressed) {
+            selectedItemIndex = 2; // 3번 키 누르면 -> 2번 인덱스(유령 망토) 선택
         }
         
         checkNextStage(); // [민정 추가] : 스테이지 이동 (F키)
@@ -364,9 +381,11 @@ public class Player extends Entity {
 
     // [특수 효과] 유령 망토 (GHOST_CLOAK) 사용 시 무적 상태 활성화
     public void activateGhostCloak() {
-        // 이미 invincible 플래그와 타이머 로직이 있으므로 여기서는 시작만 해 준다.
+        // 🔹 유령 망토 무적 5초 활성화
         this.invincible = true;
+        this.ghostCloakTimer = GHOST_CLOAK_DURATION; // 5초 (300프레임)
         this.invincibleCounter = 0;
+        System.out.println("👻 유령 망토 무적 발동! (5초간 무적)");
     }
     
     // [민정 추가] 무기 교체 (Q키 누르면 호출)
@@ -525,24 +544,5 @@ public class Player extends Entity {
 //        gp.playSE(15); 
     }
     
-    // [민정 추가] 아이템 충돌 체크 함수 (이 코드를 파일 맨 아래에 넣으세요!)
-    public void checkItemCollision() {
-        Iterator<item.Item> iterator = gp.items.iterator();
-        while (iterator.hasNext()) {
-            item.Item it = iterator.next();
-            if (it != null) {
-                Rectangle playerArea = new Rectangle((int)this.x, (int)this.y, Constants.TILE_SIZE, Constants.TILE_SIZE);
-                if (playerArea.intersects(it.getBounds()) && !it.isPicked()) {
-                    
-                    // 1. 여기서 true로 바꿔줘야 위의 update()에서 멈춥니다!
-                    obtainingItem = true; 
-                    
-                    // 2. 획득 효과(이미지 설정 등)
-                    playObtainEffect(it.getItemImage());
-                    it.pickUp();
-                    iterator.remove(); 
-                }
-            }
-        }
-    }
+    // (아이템 충돌 체크는 GamePanel.checkItemPickups()에서 처리)
 }

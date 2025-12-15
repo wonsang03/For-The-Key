@@ -64,6 +64,10 @@ public class MapLoader {
                         String[] parts = line.split("\\s+");
                         currentRoomId = Integer.parseInt(parts[1]);
                         currentRoomType = parts.length >= 3 ? parts[2] : "NORMAL";
+                        // 🔹 시장방(MARKET)을 보스방(BOSS)으로 변경
+                        if (currentRoomType.equals("MARKET") || currentRoomType.equals("SHOP")) {
+                            currentRoomType = "BOSS";
+                        }
                         mapLines.clear();
                         connections.clear();
                     }

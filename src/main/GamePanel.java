@@ -68,6 +68,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     public final int playState = 1;
     public final int gameOverState = 2;
     public final int loadingState = 3;
+    public final int gameClearState = 4; // 🔹 보스 처치 시 클리어 화면
     
     // [로딩 화면] 로딩 관련 변수
     public long loadingStartTime = 0;
@@ -104,9 +105,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private boolean isWeaponAnimating = false;
     private ArrayList<Box> boxes = new ArrayList<>();
     private ArrayList<int[]> boxSpawnPoints = new ArrayList<>();
+    
+    // 🔹 무기 교체 쿨다운 (밀리초)
+    private long lastWeaponSwapTime = 0;
+    private static final long WEAPON_SWAP_COOLDOWN = 4500; // 4.5초 쿨다운 (애니메이션 3초 + 여유 1.5초)
+    
+    // 🔹 현재 재생 중인 BGM 인덱스 추적 (중복 재생 방지)
+    private int currentMusicIndex = -1;
 
     // [수정] 방별 아이템 관리 (각 방에 드롭된 아이템을 방별로 저장)
     private java.util.Map<Integer, ArrayList<Item>> roomItems = new java.util.HashMap<>();
+    
+    // 🔹 방별 상자 열림 상태 관리 (방 ID -> 상자 위치 리스트)
+    private java.util.Map<Integer, java.util.Set<String>> roomBoxes = new java.util.HashMap<>();
 
 
     private boolean keyW, keyA, keyS, keyD, keyG, keyF;
@@ -193,7 +204,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     public void setupGame() {
         // [서충만님 코드] 맵 초기화
         tileManager = new TileManager(this);
-        MapLoader.loadAllRooms(1);
+        MapLoader.loadAllRooms(1); // 🔹 스테이지 1에서 시작
         currentRoom = MapLoader.getRoom(0);
         
         minimap = new map.Minimap();
@@ -234,6 +245,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         // 방별 아이템 목록 초기화
         roomItems.clear();
         
+        // 🔹 방별 상자 열림 상태 초기화
+        roomBoxes.clear();
+        
         // 맵 초기화 (스테이지 1, 0번룸)
         tileManager = new TileManager(this);
         MapLoader.loadAllRooms(1);
@@ -258,7 +272,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         keys.clear();
         acquiredItems.clear();
         
-        // 스테이지 음악 재생
+        // 🔹 게임오버 시 스테이지 1 BGM 재생 (죽은 스테이지 BGM 방지)
+        soundManager.stop();
+        // 스테이지 1로 리셋 (BGM도 스테이지 1로 재생)
+        MapLoader.loadAllRooms(1);
         playStageMusic();
     }
 
@@ -401,7 +418,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 EnemyType type = enemy.type;
 
                 boolean isElite =
-                    type == EnemyType.ORC ||
                     type == EnemyType.MINOTAUR ||
                     type == EnemyType.GOLEM ||
                     type == EnemyType.FROZEN_KNIGHT ||
@@ -410,8 +426,18 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     type == EnemyType.ICE_GOLEM ||
                     type == EnemyType.HELL_KNIGHT;
 
-                if (isElite) {
-                    // 🔹 정예몹: 열쇠 100%
+                // 🔹 열쇠 드랍 조건
+                boolean dropKey = false;
+                int stageNow = MapLoader.getCurrentStage();
+                if (stageNow == 3) {
+                    // 3스테이지에서는 ICE_GOLEM에게서만 열쇠 드랍
+                    dropKey = (type == EnemyType.ICE_GOLEM);
+                } else {
+                    // 그 외 스테이지는 기존 정예몹 규칙 유지
+                    dropKey = isElite;
+                }
+
+                if (dropKey) {
                     keys.add(new Key(enemy.x, enemy.y));
 
                     // 🔹 아직 안 나온 희귀 아이템만 필터링
@@ -534,6 +560,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         if (boss != null && boss.alive) {
             boss.update((int)playerX, (int)playerY);
         }
+        
+        // 🔹 보스 처치 체크 (보스가 죽으면 클리어 화면)
+        if (boss != null && !boss.alive) {
+            gameState = gameClearState;
+            soundManager.stop();
+            soundManager.playSE(11); // 클리어 효과음 (stageclear.wav)
+            System.out.println("🎉 보스 처치! 게임 클리어!");
+        }
     }
     
     // [서충만님 코드] 문 충돌 체크 및 방 이동: 플레이어가 문 타일('D')에 닿으면 연결된 방으로 이동
@@ -625,22 +659,51 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                         items.addAll(roomItems.get(nextRoomId));
                     }
                     
+                    // 🔹 새 방의 상자 찾기 (방별 열림 상태 복원)
+                    boxes.clear();
+                    if (currentRoom != null) {
+                        int currentRoomId = nextRoom.getRoomId();
+                        java.util.Set<String> openedBoxKeys = roomBoxes.getOrDefault(currentRoomId, new java.util.HashSet<>());
+                        
+                        char[][] roomMap = currentRoom.getMap();
+                        if (roomMap != null) {
+                            for (int y = 0; y < roomMap.length; y++) {
+                                for (int x = 0; x < roomMap[y].length; x++) {
+                                    if (roomMap[y][x] == 'C') {
+                                        int boxX = x * Constants.TILE_SIZE;
+                                        int boxY = y * Constants.TILE_SIZE;
+                                        String boxKey = boxX + "," + boxY;
+                                        
+                                        Box box = new Box(boxX, boxY);
+                                        // 이미 열린 상자는 열린 상태로 복원
+                                        if (openedBoxKeys.contains(boxKey)) {
+                                            box.open();
+                                        }
+                                        boxes.add(box);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // [서상원님 코드] 새 방으로 이동 시 적 스폰 포인트 찾기 및 스폰
                     findEnemySpawnPoints();
                     spawnEnemiesFromMap();
-                    playStageMusic();
+                    // 🔹 방 이동 시에는 BGM 재생하지 않음 (같은 스테이지 내 이동)
                     soundManager.playSE(18); // [김민정님 코드] 문 열리는 소리
                 }
             }
         }
     }
     
-    // [서상원님 코드] 맵에서 E 타일(일반몹)과 L 타일(정예몹) 위치 찾기
+    // [서상원님 코드] 맵에서 E 타일(일반몹), L 타일(정예몹), B 타일(보스) 위치 찾기
     private ArrayList<int[]> eliteSpawnPoints = new ArrayList<>();
+    private ArrayList<int[]> bossSpawnPoints = new ArrayList<>();
     
     private void findEnemySpawnPoints() {
         enemySpawnPoints.clear();
         eliteSpawnPoints.clear();
+        bossSpawnPoints.clear();
         if (currentRoom == null) return;
         
         char[][] map = currentRoom.getMap();
@@ -652,6 +715,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     enemySpawnPoints.add(new int[]{x, y});
                 } else if (map[y][x] == 'L') {
                     eliteSpawnPoints.add(new int[]{x, y});
+                } else if (map[y][x] == 'B') {
+                    bossSpawnPoints.add(new int[]{x, y});
                 }
             }
         }
@@ -672,13 +737,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 types = new EnemyType[]{EnemyType.FROZEN_KNIGHT, EnemyType.YETI, EnemyType.SNOW_MAGE};
                 break;
             case 4:
+                // ORC 제거
                 types = new EnemyType[]{
                     EnemyType.BOMB_SKULL, 
                     EnemyType.HELL_HOUND, 
                     EnemyType.FIRE_IMP, 
                     EnemyType.MAGMA_SLIME_BIG,
-                    EnemyType.MAGMA_SLIME_SMALL,
-                    EnemyType.ORC
+                    EnemyType.MAGMA_SLIME_SMALL
                 };
                 break;
             case 5:
@@ -716,15 +781,20 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         
         int currentStage = MapLoader.getCurrentStage();
         enemies.clear();
+        boss = null; // 보스 초기화
         
-        if (currentStage == 5) {
-            if (!enemySpawnPoints.isEmpty()) {
-                int[] spawnPoint = enemySpawnPoints.get(0);
-                int tileX = spawnPoint[0];
-                int tileY = spawnPoint[1];
-                System.out.println("보스 스폰 위치: (" + tileX + ", " + tileY + ")");
-            }
-            return;
+        // 🔹 보스 스폰 (B 타일) - 모든 스테이지에서 B 타일이 있으면 보스 스폰
+        if (!bossSpawnPoints.isEmpty()) {
+            int[] spawnPoint = bossSpawnPoints.get(0); // 첫 번째 B 타일 위치
+            int tileX = spawnPoint[0];
+            int tileY = spawnPoint[1];
+            
+            double spawnX = (tileX + 0.5) * Constants.TILE_SIZE;
+            double spawnY = (tileY + 0.5) * Constants.TILE_SIZE;
+            
+            boss = new Boss(spawnX, spawnY, soundManager);
+            System.out.println("보스 스폰 위치: (" + tileX + ", " + tileY + ")");
+            return; // 보스가 있으면 일반몹/정예몹 스폰 안 함
         }
         
         // 일반몹 스폰 (E 타일)
@@ -800,6 +870,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             if (!box.opened && playerRect.intersects(boxRect)) {
                 if (enemies.isEmpty()) {
                     box.open();
+                    // 🔹 방별 상자 열림 상태 저장
+                    if (currentRoom != null) {
+                        int roomId = currentRoom.getRoomId();
+                        String boxKey = box.x + "," + box.y;
+                        roomBoxes.putIfAbsent(roomId, new java.util.HashSet<>());
+                        roomBoxes.get(roomId).add(boxKey);
+                    }
                     soundManager.playSE(15);
 
                     double roll = Math.random(); // 0~1 사이 난수
@@ -809,7 +886,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                         WeaponType[] weaponPool = {
                             WeaponType.PISTOL,
                             WeaponType.SHOTGUN,
-                            WeaponType.SNIPER
+                            WeaponType.SNIPER,
+                            WeaponType.DAGGER,
+                            WeaponType.LONG_SWORD,
+                            WeaponType.KNIGHT_SWORD
                         };
                         WeaponType dropWeapon = weaponPool[(int)(Math.random() * weaponPool.length)];
 
@@ -862,6 +942,23 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         spawnEnemiesFromMap();
         boss = null;
         
+        // 🔹 상자 초기화 및 새 방의 상자 찾기
+        boxes.clear();
+        if (currentRoom != null) {
+            char[][] map = currentRoom.getMap();
+            if (map != null) {
+                for (int y = 0; y < map.length; y++) {
+                    for (int x = 0; x < map[y].length; x++) {
+                        if (map[y][x] == 'C') {
+                            int boxX = x * Constants.TILE_SIZE;
+                            int boxY = y * Constants.TILE_SIZE;
+                            boxes.add(new Box(boxX, boxY));
+                        }
+                    }
+                }
+            }
+        }
+        
         // [수정] 현재 방의 아이템 로드
         if (currentRoom != null) {
             int roomId = currentRoom.getRoomId();
@@ -870,6 +967,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 items.addAll(roomItems.get(roomId));
             }
         }
+        
+        // 🔹 스테이지 BGM 재생 (로딩 화면 끝난 후)
+        playStageMusic();
     }
     
     // [서충만님 코드] 맵 경계 테두리 그리기: 맵 경계를 초록색 선과 모서리 사각형으로 표시
@@ -1101,24 +1201,73 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private void checkItemPickups() {
         double playerX = player.x;
         double playerY = player.y;
-        Rectangle playerRect = new Rectangle((int)playerX - Constants.TILE_SIZE / 2, (int)playerY - Constants.TILE_SIZE / 2, Constants.TILE_SIZE, Constants.TILE_SIZE);
-        for (Item item : items) {
-            if (!item.isPicked() && playerRect.intersects(item.getBounds())) {
-                item.pickUp();
-                acquiredItems.add(item.getType());
-                applyItemEffect(item.getType());
-                
-                // [수정] 방별 아이템 목록에서도 제거
-                if (currentRoom != null) {
-                    int roomId = currentRoom.getRoomId();
-                    if (roomItems.containsKey(roomId)) {
-                        roomItems.get(roomId).remove(item);
-                    }
-                }
-                
-                // [김민정님 코드] 아이템 획득 사운드
-                soundManager.playSE(15); // [김민정님 코드] 아이템 획득 소리
+        // 🔹 아이템 습득 범위 축소 (기존 TILE_SIZE의 70%로 축소)
+        int pickupRange = (int)(Constants.TILE_SIZE * 0.7);
+        Rectangle playerRect = new Rectangle(
+                (int) playerX - pickupRange / 2,
+                (int) playerY - pickupRange / 2,
+                pickupRange, pickupRange);
+
+        // 인덱스 기반 반복문 사용 (순회 중 add/remove 허용)
+        for (int i = 0; i < items.size(); ) {
+            Item item = items.get(i);
+
+            if (item.isPicked() || !playerRect.intersects(item.getBounds())) {
+                i++;
+                continue;
             }
+
+            // 🔹 상자/드롭 무기 처리 (근거리 ↔ 근거리, 원거리 ↔ 원거리만 교체)
+            if (item.isWeaponPickup()) {
+                boolean success = handleWeaponItemPickup(item);
+                if (success) {
+                    // 방별 아이템 목록에서도 제거
+                    if (currentRoom != null) {
+                        int roomId = currentRoom.getRoomId();
+                        if (roomItems.containsKey(roomId)) {
+                            roomItems.get(roomId).remove(item);
+                        }
+                    }
+                    // 아이템 리스트에서 제거
+                    items.remove(i);
+                    // 무기 교체 성공 시 사운드 재생
+                    soundManager.playSE(15);
+                    continue; // i 증가하지 않음 (이미 다음 요소로 이동됨)
+                } else {
+                    // 교체 조건이 아니면 다음 프레임에 다시 시도
+                    i++;
+                    continue;
+                }
+            }
+
+            // 🔹 액티브 아이템(포션/유령망토)만 애니메이션
+            ItemType t = item.getType();
+            boolean isActive =
+                    t == ItemType.RED_POTION ||
+                    t == ItemType.ELIXIR ||
+                    t == ItemType.GHOST_CLOAK;
+
+            if (isActive && !player.obtainingItem) {
+                player.playObtainEffect(item.getPickupImage());
+            }
+
+            item.pickUp();
+            acquiredItems.add(item.getType());
+            applyItemEffect(item.getType());
+
+            // [수정] 방별 아이템 목록에서도 제거
+            if (currentRoom != null) {
+                int roomId = currentRoom.getRoomId();
+                if (roomItems.containsKey(roomId)) {
+                    roomItems.get(roomId).remove(item);
+                }
+            }
+
+            // [김민정님 코드] 아이템 획득 사운드
+            soundManager.playSE(15);
+
+            // 아이템 리스트에서 제거
+            items.remove(i);
         }
     }
     
@@ -1155,16 +1304,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             player.addAttackSpeedBonus(type.getAttackSpeedBuff());
         }
 
-        // 🔹 체력 관련 아이템
+        // 🔹 체력 관련/액티브 아이템 → 인벤토리 수량만 증가
         if (type == ItemType.RED_POTION) {
-            // ❤️ 체력 +30 회복 (최대체력 초과 방지)
-            player.heal(30);
-            damageTexts.add(new DamageText(player.x, player.y - 20, "❤️ HP +30", Color.PINK));
+            player.redPotionCount++;
         }
         else if (type == ItemType.ELIXIR) {
-            // 💖 체력 완전 회복
-            player.heal(player.getMaxHP());
-            damageTexts.add(new DamageText(player.x, player.y - 20, "💖 체력 완전 회복!", Color.MAGENTA));
+            player.elixirCount++;
         }
         else if (type.getHpBuff() != 0) {
             // ❗ 일반적인 HP 버프 아이템만 최대체력 증가
@@ -1178,14 +1323,87 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
 
         if (type == ItemType.GHOST_CLOAK) {
-            player.activateGhostCloak();
-            damageTexts.add(new DamageText(player.x, player.y - 20, "👻 무적 발동!", Color.CYAN));
+            // 🔹 유령 망토는 인벤토리 수량만 증가 (E키로 사용)
+            player.ghostCloakCount++;
         }
 
         // 🔹 공통 이펙트 표시 (중복 방지)
         if (type != ItemType.RED_POTION && type != ItemType.ELIXIR) {
             damageTexts.add(new DamageText(player.x, player.y - 20, "+" + type.getName(), Color.CYAN));
         }
+    }
+
+    // [추가] 상자에서 떨어진 무기(WeaponType) 아이템 처리
+    // 반환값: true = 교체 성공, false = 교체 실패 (조건 불만족)
+    private boolean handleWeaponItemPickup(Item item) {
+        WeaponType wt = item.getWeaponType();
+        if (wt == null) return false;
+
+        // 🔹 무기 교체 쿨다운 체크
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastWeaponSwapTime < WEAPON_SWAP_COOLDOWN) {
+            // 쿨다운 중이면 교체 불가
+            return false;
+        }
+
+        // 현재 들고 있는 무기 가져오기
+        Weapon currentWeapon = player.getCurrentWeapon();
+        if (currentWeapon == null) {
+            // 무기가 없으면 교체 불가
+            return false;
+        }
+
+        // 현재 무기의 타입 확인 (근거리/원거리)
+        boolean currentIsRanged = currentWeapon.getType().isRanged();
+        boolean pickupIsRanged = wt.isRanged();
+
+        // 디버깅: 무기 타입 확인
+        System.out.println("🔍 무기 교체 체크:");
+        System.out.println("  현재 무기: " + currentWeapon.getType().getName() + " (원거리: " + currentIsRanged + ")");
+        System.out.println("  상자 무기: " + wt.getName() + " (원거리: " + pickupIsRanged + ")");
+
+        // 🔹 현재 들고 있는 무기와 상자 무기가 같은 타입(근거리↔근거리, 원거리↔원거리)일 때만 교체
+        if (currentIsRanged != pickupIsRanged) {
+            // 타입이 다르면 교체 불가 (플레이어가 직접 Q키로 바꾸지 않는 이상)
+            System.out.println("  ❌ 타입이 달라서 교체 불가");
+            return false;
+        }
+        
+        System.out.println("  ✅ 타입이 같아서 교체 가능");
+
+        // 0: 근접, 1: 원거리 (슬롯 인덱스)
+        int slotIndex = pickupIsRanged ? 1 : 0;
+
+        // 인벤토리 크기 보장
+        while (player.inventory.size() <= slotIndex) {
+            player.inventory.add(null);
+        }
+
+        Weapon current = player.inventory.get(slotIndex);
+
+        // 기존 무기가 있었다면 아이템으로 바닥에 드롭
+        if (current != null) {
+            Item dropped = new Item(player.x, player.y, current.getType());
+            items.add(dropped);
+        }
+
+        // 새 무기 장착
+        Weapon newWeapon = new Weapon(wt);
+        player.inventory.set(slotIndex, newWeapon);
+
+        // 현재 무기도 갱신 (currentWeaponIndex가 바뀌지 않았으므로 그대로 유지)
+        syncCurrentWeaponFromPlayer();
+
+        // 애니메이션
+        if (!player.obtainingItem) {
+            player.playObtainEffect(item.getPickupImage());
+        }
+
+        // 🔹 무기 교체 쿨다운 시작
+        lastWeaponSwapTime = System.currentTimeMillis();
+
+        System.out.println("무기 교체(상자 드랍): " + wt.getDisplayName());
+        return true; // 성공
     }
     
     // [적 공격 체크] 일반 적의 근접 공격 및 투사체 충돌 체크
@@ -1215,6 +1433,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 player.receiveDamage(damage);
                 damageTexts.add(new DamageText(playerX, playerY - 10,
                         String.valueOf(damage), Color.RED));
+            }
+        }
+        
+        // 🔹 보스 공격 체크
+        if (boss != null && boss.alive) {
+            if (boss.canAttackPlayer((int)playerX, (int)playerY)) {
+                int damage = boss.getAttackDamage();
+                player.receiveDamage(damage);
+                damageTexts.add(new DamageText(playerX, playerY - 10,
+                        String.valueOf(damage), Color.RED));
+                System.out.println("💥 보스 공격 적중! 데미지: " + damage);
             }
         }
     }
@@ -1274,9 +1503,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         bullets.clear();
         items.clear();
         damageTexts.clear();
-        enemies.clear(); 
+        enemies.clear();
+        boxes.clear(); // 상자도 초기화
         
-        playStageMusic();
+        // 이전 스테이지 BGM 정지 (로딩 화면 끝난 후 playStageMusic()에서 재생)
+        soundManager.stop();
         
         System.out.println("스테이지 " + nextStage + " 시작!");
     }
@@ -1352,11 +1583,21 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private void changeWeapon(boolean next) {
         if (player == null) return;
 
+        // 🔹 무기 교체 쿨다운 체크
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastWeaponSwapTime < WEAPON_SWAP_COOLDOWN) {
+            // 쿨다운 중이면 교체 불가
+            return;
+        }
+
         // 1) Player 인벤토리에서 현재 무기 인덱스 변경
         player.swapWeapon();
 
         // 2) Player 기준으로 currentWeapon을 다시 동기화 + 커서 갱신
         updateCursorToWeapon();
+        
+        // 🔹 무기 교체 쿨다운 시작
+        lastWeaponSwapTime = System.currentTimeMillis();
     }
 
     public void syncCurrentWeaponFromPlayer() {
@@ -1527,12 +1768,46 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             if (code == KeyEvent.VK_G) keyG = true;
             if (code == KeyEvent.VK_F) keyF = true;
             
-            if (code == KeyEvent.VK_1) System.out.println("소모품 1번 선택");
-            if (code == KeyEvent.VK_2) System.out.println("소모품 2번 선택");
-            if (code == KeyEvent.VK_3) System.out.println("소모품 3번 선택");
+            if (code == KeyEvent.VK_1) {
+                System.out.println("소모품 1번 선택");
+                if (player != null) {
+                    player.selectedItemIndex = 0;
+                }
+            }
+            if (code == KeyEvent.VK_2) {
+                System.out.println("소모품 2번 선택");
+                if (player != null) {
+                    player.selectedItemIndex = 1;
+                }
+            }
+            if (code == KeyEvent.VK_3) {
+                System.out.println("소모품 3번 선택 (유령 망토)");
+                if (player != null) {
+                    player.selectedItemIndex = 2;
+                }
+            }
 
             if (code == KeyEvent.VK_E) {
-                System.out.println("아이템 사용!");
+                // 선택된 아이템 슬롯 사용 (빨간 물약 / 엘릭서 / 유령 망토)
+                if (player != null) {
+                    if (player.selectedItemIndex == 0 && player.redPotionCount > 0) {
+                        player.heal(30);
+                        player.redPotionCount--;
+                        damageTexts.add(new DamageText(player.x, player.y - 20, "❤️ HP +30", Color.PINK));
+                        soundManager.playSE(15);
+                    } else if (player.selectedItemIndex == 1 && player.elixirCount > 0) {
+                        player.heal(player.getMaxHP());
+                        player.elixirCount--;
+                        damageTexts.add(new DamageText(player.x, player.y - 20, "💖 체력 완전 회복!", Color.MAGENTA));
+                        soundManager.playSE(15);
+                    } else if (player.selectedItemIndex == 2 && player.ghostCloakCount > 0) {
+                        // 🔹 유령 망토 사용 (5초간 무적)
+                        player.activateGhostCloak();
+                        player.ghostCloakCount--;
+                        damageTexts.add(new DamageText(player.x, player.y - 20, "👻 무적 발동!", Color.CYAN));
+                        soundManager.playSE(15);
+                    }
+                }
             }
             
             if (code == KeyEvent.VK_Q) {
@@ -1545,6 +1820,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             if (code == KeyEvent.VK_R) {
                 resetGameOnDeath();
                 gameState = playState;
+            }
+        }
+        else if (gameState == gameClearState) {
+            if (code == KeyEvent.VK_R) {
+                // 다음 스테이지로 이동
+                nextStage();
+                gameState = playState; // 게임 상태를 플레이 상태로 변경
             }
         }
     }
@@ -1610,6 +1892,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             musicIndex = 6;
         }
 
+        // 🔹 같은 음악이 이미 재생 중이면 재생하지 않음 (중복 방지)
+        if (currentMusicIndex == musicIndex) {
+            System.out.println("🎵 스테이지 " + currentStage + " BGM 이미 재생 중 (인덱스: " + musicIndex + ")");
+            return;
+        }
+
+        // 🔹 이전 배경음악 강제 정지
+        soundManager.stop();
+        currentMusicIndex = -1; // 재생 중인 음악 초기화
+        
+        // 새 음악 재생
+        System.out.println("🎵 스테이지 " + currentStage + " BGM 재생 (인덱스: " + musicIndex + ")");
         soundManager.playMusic(musicIndex);
+        currentMusicIndex = musicIndex; // 현재 재생 중인 음악 인덱스 저장
     }
 }

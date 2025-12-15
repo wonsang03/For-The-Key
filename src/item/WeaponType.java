@@ -10,11 +10,11 @@ import javax.imageio.ImageIO;
 
 public enum WeaponType {
     PISTOL("Pistol", 10, 0.4, 600, true,"res/item/pistol1.png"),
-    SHOTGUN("Shotgun", 5, 1.2, 350,false, "res/item/shotgun1.png"),
-    SNIPER("Sniper", 60, 2.0, 1200,false, "res/item/sniper1.png"),
+    SHOTGUN("Shotgun", 5, 1.2, 350,true, "res/item/shotgun1.png"),
+    SNIPER("Sniper", 60, 2.0, 1200,true, "res/item/sniper1.png"),
     DAGGER("Dagger", 5, 0.15, 80,false, "res/item/dagger1.png"),
     LONG_SWORD("Long Sword", 15, 0.5, 150, false, null),
-    KNIGHT_SWORD("Knight Sword", 45, 1.5, 210, true, null);
+    KNIGHT_SWORD("Knight Sword", 45, 1.5, 210, false, null);
 
     private final String name;
     private final double damage, attackSpeed, range;

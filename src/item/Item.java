@@ -211,6 +211,8 @@ public class Item {
                 sx = 836; sy = 1347; break;
             case ELIXIR:
                 sx = 387; sy = 1315; break;
+            case GHOST_CLOAK:
+                sx = 321; sy = 1156; break;
             // 필요하다면 다른 아이템 좌표도 여기에 추가 가능
             default:
                 return null;
@@ -225,12 +227,18 @@ public class Item {
     
     // [민정 추가] 현재 아이템 객체의 이미지를 잘라서 반환하는 함수
     public BufferedImage getItemImage() {
-        // 이미지가 로드되지 않았다면 로드 시도
         if (spriteSheet == null) {
             loadSpriteSheet();
         }
-        // 좌표에 맞는 이미지 잘라서 반환
         return spriteSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
+    }
+
+    // [추가] 획득 애니메이션에 사용할 이미지 (무기면 무기 이미지, 아니면 아이템 시트)
+    public BufferedImage getPickupImage() {
+        if (weaponPickup && weaponImage != null) {
+            return weaponImage;
+        }
+        return getItemImage();
     }
     
 }
