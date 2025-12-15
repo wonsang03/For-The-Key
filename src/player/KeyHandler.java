@@ -2,43 +2,34 @@ package player;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.File;
-
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.AudioInputStream;
 
 import main.GamePanel;
 
 public class KeyHandler implements KeyListener {
-	
-	GamePanel gp;
 
-    // 플레이어 이동 상태 변수 (Player 클래스에서 사용)
+    // [김민정님 코드] 플레이어 이동 상태 변수
     public boolean upPressed, downPressed, leftPressed, rightPressed;
     
-    // 키 입력 감지 (아이템, 무기 교체 등)
-    public boolean onePressed, twoPressed, threePressed;
+    // [김민정님 코드] 키 입력 감지
+    public boolean onePressed, twoPressed;  // 민정 수정 : 아이템 슬롯 창이 3개에서 2개로 변경함
     public boolean qPressed, ePressed;
-    
-    // 테스트용 키 (K: 피격 테스트)
     public boolean kPressed;
+    public boolean fPressed; // [민정 추가] : 열쇠 사용 키
+    public boolean gPressed; // [민정 추가] 무기 줍기용 G키 변수 추가
     
-    // 생성자 추가: GamePanel을 받아와서 연결합니다.
+    GamePanel gp;
+    
     public KeyHandler(GamePanel gp) {
         this.gp = gp;
     }
-
+    
     @Override
     public void keyTyped(KeyEvent e) {
-        // 사용하지 않음
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
-        
-        // 플레이어 이동 (WASD)
         if (code == KeyEvent.VK_W) {
             upPressed = true;
         }
@@ -52,58 +43,44 @@ public class KeyHandler implements KeyListener {
             rightPressed = true;
         }
         
-        // 아이템 및 기능 키
         if (code == KeyEvent.VK_1) {
             onePressed = true;
         }
         if (code == KeyEvent.VK_2) {
             twoPressed = true;
         }
-        if (code == KeyEvent.VK_3) {
-            threePressed = true;
-        }
+//        if (code == KeyEvent.VK_3) {
+//            threePressed = true;
+//        }  // [민정 수정] 아이템 슬롯 창을 3개에서 2개로 변경함
+        // [민정 수정]
         if (code == KeyEvent.VK_Q) {
             qPressed = true;
+            // [민정 추가] 키를 누르는 순간 무기 교체 실행
+            gp.player.swapWeapon();
         }
         if (code == KeyEvent.VK_E) {
             ePressed = true;
         }
-        
-        // 피격 테스트용 키 (GamePanel에서 이 상태를 체크하거나 이벤트를 받을 수 있음)
         if (code == KeyEvent.VK_K) {
             kPressed = true;
         }
-        
+        // [추가] TAB 키를 누르면 정보창 상태(보임/안보임)를 반대로 뒤집음
         if (code == KeyEvent.VK_TAB) {
-            if (gp.gameState == gp.playState) {
+            if (gp.gameState == gp.playState) { // 플레이 중에만 작동하도록 설정
                 gp.ui.showStatusDetail = !gp.ui.showStatusDetail;
             }
+        } // 민정 추가
+        if (code == KeyEvent.VK_F) { // [민정 추가] : 열쇠 사용 키
+            fPressed = true;
         }
-    }
-    
-    public void playSound(String soundName) {
-        try {
-            // 프로젝트 내 sounds 폴더 경로 참조
-            File file = new File("sounds/" + soundName);
-            
-            if(file.exists()) {
-                AudioInputStream audioStream = AudioSystem.getAudioInputStream(file);
-                Clip clip = AudioSystem.getClip();
-                clip.open(audioStream);
-                clip.start();
-            } else {
-                System.out.println("파일을 찾을 수 없음: " + soundName);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (code == KeyEvent.VK_G) { // [민정 추가] : 무기 줍기
+            gPressed = true;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         int code = e.getKeyCode();
-        
-        // 키를 뗐을 때 상태 false로 변경
         if (code == KeyEvent.VK_W) {
             upPressed = false;
         }
@@ -123,19 +100,23 @@ public class KeyHandler implements KeyListener {
         if (code == KeyEvent.VK_2) {
             twoPressed = false;
         }
-        if (code == KeyEvent.VK_3) {
-            threePressed = false;
-        }
+//        if (code == KeyEvent.VK_3) {
+//            threePressed = false;
+//        }  // [민정 수정] 아이템 슬롯 창이 3개에서 2개로 변경함
         if (code == KeyEvent.VK_Q) {
             qPressed = false;
         }
         if (code == KeyEvent.VK_E) {
             ePressed = false;
         }
-        
-        // 테스트 키 해제
         if (code == KeyEvent.VK_K) {
             kPressed = false;
         }
-    }    
+        if (code == KeyEvent.VK_F) { // [민정 추가] : 열쇠 사용
+            fPressed = false;
+        }
+        if (code == KeyEvent.VK_G) { // [민정 추가] : 무기 줍기
+            gPressed = false;
+        }
+    }
 }
