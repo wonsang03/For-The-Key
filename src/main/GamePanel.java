@@ -642,9 +642,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     
     // [자폭해골] 자폭 처리: 범위 내 플레이어에게 데미지 적용
     private void handleBombSkullExplosion(Enemy bombSkull) {
-        HitBoxBounds bounds = getEnemyHitBox(bombSkull);
-        double explosionX = bounds.centerX;
-        double explosionY = bounds.centerY;
+        double drawY_world = bombSkull.y - (bombSkull.hitHeight - 48);
+        double explosionX = bombSkull.x + (bombSkull.drawWidth / 2.0);
+        double explosionY = drawY_world + (bombSkull.drawHeight / 2.0);
         
         int explosionRange = 200;
         double playerX = player.x;
@@ -748,70 +748,54 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
     }
     
-    // [통합] 히트박스 계산 헬퍼 클래스
-    private static class HitBoxBounds {
-        double left, right, top, bottom;
-        double centerX, centerY;
-        
-        HitBoxBounds(double x, double y, int hitWidth, int hitHeight, int drawWidth, int drawHeight, int yOffset) {
-            double drawY_world = y - (hitHeight - yOffset);
-            this.centerX = x + (drawWidth / 2.0);
-            this.centerY = drawY_world + (drawHeight / 2.0);
-            this.left = centerX - (hitWidth / 2.0);
-            this.right = centerX + (hitWidth / 2.0);
-            this.top = centerY - (hitHeight / 2.0);
-            this.bottom = centerY + (hitHeight / 2.0);
-        }
-        
-        boolean contains(double px, double py) {
-            return px >= left && px <= right && py >= top && py <= bottom;
-        }
-    }
-    
-    // [통합] Enemy 히트박스 계산
-    private HitBoxBounds getEnemyHitBox(Enemy e) {
-        return new HitBoxBounds(e.x, e.y, e.hitWidth, e.hitHeight, e.drawWidth, e.drawHeight, 48);
-    }
-    
-    // [통합] Boss 히트박스 계산
-    private HitBoxBounds getBossHitBox(Boss boss) {
-        return new HitBoxBounds(boss.x, boss.y, boss.hitWidth, boss.hitHeight, boss.drawWidth, boss.drawHeight, 48);
-    }
-    
-    // [통합] 총알-대상 충돌 처리 (Enemy와 Boss 공통)
-    private void processBulletHit(Bullet b, HitBoxBounds bounds, Object target) {
-        double dmg = currentWeapon.getDamage() * player.getAttackMultiplier();
-        if (target instanceof Enemy) {
-            ((Enemy) target).takeDamage((int)dmg);
-        } else if (target instanceof Boss) {
-            ((Boss) target).takeDamage((int)dmg);
-        }
-        b.deactivate();
-        Color dmgColor = dmg >= 50 ? Color.RED : Color.YELLOW;
-        damageTexts.add(new DamageText(bounds.centerX, bounds.centerY - 10,
-                String.valueOf((int)dmg), dmgColor));
-    }
-    
     // [김선욱님 코드] 총알-적 충돌 감지
     private void checkBulletCollisions() {
         for (Bullet b : bullets) {
             if (!b.isActive()) continue;
             
-            // Enemy 충돌 체크
             for (Enemy e : enemies) {
                 if (!e.alive) continue;
-                HitBoxBounds bounds = getEnemyHitBox(e);
-                if (bounds.contains(b.getX(), b.getY())) {
-                    processBulletHit(b, bounds, e);
-                    break; // 한 총알은 하나의 적만 맞춤
+                
+                double drawY_world = e.y - (e.hitHeight - 48);
+                double spriteCenterX = e.x + (e.drawWidth / 2.0);
+                double spriteCenterY = drawY_world + (e.drawHeight / 2.0);
+                
+                double enemyLeft = spriteCenterX - (e.hitWidth / 2.0);
+                double enemyRight = spriteCenterX + (e.hitWidth / 2.0);
+                double enemyTop = spriteCenterY - (e.hitHeight / 2.0);
+                double enemyBottom = spriteCenterY + (e.hitHeight / 2.0);
+                
+                if (b.getX() >= enemyLeft && b.getX() <= enemyRight &&
+                    b.getY() >= enemyTop && b.getY() <= enemyBottom) {
+                    double dmg = currentWeapon.getDamage() * player.getAttackMultiplier();
+                    e.takeDamage((int)dmg);
+                    b.deactivate();
+
+                    Color dmgColor = dmg >= 50 ? Color.RED : Color.YELLOW;
+                    damageTexts.add(new DamageText(spriteCenterX, spriteCenterY - 10,
+                            String.valueOf((int)dmg), dmgColor));
                 }
             }
             
-            // Boss 충돌 체크 (총알이 아직 활성화되어 있을 때만)
-            if (b.isActive() && boss != null && boss.alive) {
-                HitBoxBounds bounds = getBossHitBox(boss);
-                if (bounds.contains(b.getX(), b.getY())) {
-                    processBulletHit(b, bounds, boss);
+            if (boss != null && boss.alive) {
+                double drawY_world = boss.y - (boss.hitHeight - 48);
+                double spriteCenterX = boss.x + (boss.drawWidth / 2.0);
+                double spriteCenterY = drawY_world + (boss.drawHeight / 2.0);
+                
+                double bossLeft = spriteCenterX - (boss.hitWidth / 2.0);
+                double bossRight = spriteCenterX + (boss.hitWidth / 2.0);
+                double bossTop = spriteCenterY - (boss.hitHeight / 2.0);
+                double bossBottom = spriteCenterY + (boss.hitHeight / 2.0);
+                
+                if (b.getX() >= bossLeft && b.getX() <= bossRight &&
+                    b.getY() >= bossTop && b.getY() <= bossBottom) {
+                    double dmg = currentWeapon.getDamage() * player.getAttackMultiplier();
+                    boss.takeDamage((int)dmg);
+                    b.deactivate();
+
+                    Color dmgColor = dmg >= 50 ? Color.RED : Color.YELLOW;
+                    damageTexts.add(new DamageText(spriteCenterX, spriteCenterY - 10,
+                            String.valueOf((int)dmg), dmgColor));
                 }
             }
         }
