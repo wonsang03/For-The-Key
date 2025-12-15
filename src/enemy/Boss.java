@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
+import system.SoundManager;
 
 // [서상원님 코드] 보스 시스템: 패턴 공격, 대시, 투사체
 public class Boss {
@@ -20,6 +21,8 @@ public class Boss {
     public int drawWidth;
     public int drawHeight;
     public boolean alive = true;
+    
+    private SoundManager soundManager;
     
     private int attackRange = 200;
     private int attackDamage = 50;
@@ -84,11 +87,12 @@ public class Boss {
     private final int ULTIMATE_PATTERN_DURATION = 90;
 
     // [서상원님 코드] 보스 생성자
-    public Boss(double startX, double startY) {
+    public Boss(double startX, double startY, SoundManager soundManager) {
         this.x = startX;
         this.y = startY;
         this.maxHp = 10000;
         this.hp = this.maxHp;
+        this.soundManager = soundManager;
         
         this.hitWidth = 120; 
         this.hitHeight = 120; 
@@ -436,6 +440,15 @@ public class Boss {
         meleeAttackFrame3Applied = false;
         meleeAttackFrame6Applied = false;
         
+        // [수정] 보스 공격 패턴 소리 재생
+        if (soundManager != null) {
+            if (pattern == MELEE_ATTACK_1 || pattern == MELEE_ATTACK_2) {
+                soundManager.playSE(22); // enemy_swing1 (무기 휘두르는 소리)
+            } else if (pattern == ULTIMATE) {
+                soundManager.playSE(24); // enemy_throw (투사체 소리)
+            }
+        }
+        
         if (pattern == MELEE_ATTACK_2) {
             dashCount = 1;
             dashStartX = this.x;
@@ -502,39 +515,64 @@ public class Boss {
         return 0;
     }
     
-    private void performDash(double movement, int targetX, int targetY) {
-        BossPosition pos = calculateBossPosition();
-        double dx = targetX - pos.centerX;
-        double dy = targetY - pos.centerY;
-        double distanceSquared = dx * dx + dy * dy;
+    // [통합] 거리 및 방향 계산 헬퍼
+    private static class DistanceResult {
+        final double distance;
+        final double dirX, dirY;
+        final boolean valid;
         
-        if (distanceSquared > 0) {
-            double distance = Math.sqrt(distanceSquared);
-            isDashingAngle = true;
-            
-            double dirX = dx / distance;
-            double dirY = dy / distance;
-            this.x += movement * dirX;
-            this.y += movement * dirY;
+        DistanceResult(double dx, double dy) {
+            double distSq = dx * dx + dy * dy;
+            if (distSq > 0) {
+                this.distance = Math.sqrt(distSq);
+                this.dirX = dx / distance;
+                this.dirY = dy / distance;
+                this.valid = true;
+            } else {
+                this.distance = 0;
+                this.dirX = 0;
+                this.dirY = 0;
+                this.valid = false;
+            }
         }
     }
     
+    private void performDash(double movement, int targetX, int targetY) {
+        BossPosition pos = calculateBossPosition();
+        DistanceResult result = new DistanceResult(targetX - pos.centerX, targetY - pos.centerY);
+        
+        if (result.valid) {
+            isDashingAngle = true;
+            this.x += movement * result.dirX;
+            this.y += movement * result.dirY;
+        }
+    }
+    
+    // [통합] 위치 계산 헬퍼 메서드
+    private double getDrawYWorld() {
+        return this.y - (this.hitHeight - Y_OFFSET);
+    }
+    
+    private double[] getCenter() {
+        double drawY_world = getDrawYWorld();
+        return new double[]{
+            this.x + (this.drawWidth * 0.5),
+            drawY_world + (this.drawHeight * 0.5)
+        };
+    }
+    
     private BossPosition calculateBossPosition() {
-        double drawY_world = this.y - (this.hitHeight - Y_OFFSET);
-        double centerX = this.x + (this.drawWidth * 0.5);
-        double centerY = drawY_world + (this.drawHeight * 0.5);
-        return new BossPosition(centerX, centerY);
+        double[] center = getCenter();
+        return new BossPosition(center[0], center[1]);
     }
     
     private void calculateAndSetDashDirection(int targetX, int targetY) {
         BossPosition pos = calculateBossPosition();
-        double dx = targetX - pos.centerX;
-        double dy = targetY - pos.centerY;
-        double distance = Math.sqrt(dx * dx + dy * dy);
+        DistanceResult result = new DistanceResult(targetX - pos.centerX, targetY - pos.centerY);
         
-        if (distance > 0) {
-            dashDirectionX = dx / distance;
-            dashDirectionY = dy / distance;
+        if (result.valid) {
+            dashDirectionX = result.dirX;
+            dashDirectionY = result.dirY;
             isDashingAngle = true;
         }
     }
@@ -626,48 +664,55 @@ public class Boss {
         return projectiles;
     }
 
+    // [통합] 거리 및 방향 계산 헬퍼
+    private static class AttackCheckResult {
+        final double distance;
+        final double dotProduct;
+        final boolean inRange;
+        
+        AttackCheckResult(double distance, double dotProduct, boolean inRange) {
+            this.distance = distance;
+            this.dotProduct = dotProduct;
+            this.inRange = inRange;
+        }
+    }
+    
+    private AttackCheckResult checkAttackRange(int playerX, int playerY, int range) {
+        BossPosition pos = calculateBossPosition();
+        double dx = playerX - pos.centerX;
+        double dy = playerY - pos.centerY;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > range || distance == 0) {
+            return new AttackCheckResult(distance, 0, false);
+        }
+        
+        double attackDirection = Math.atan2(dy, dx);
+        double playerDirX = dx / distance;
+        double playerDirY = dy / distance;
+        double attackDirX = Math.cos(attackDirection);
+        double attackDirY = Math.sin(attackDirection);
+        double dotProduct = playerDirX * attackDirX + playerDirY * attackDirY;
+        
+        return new AttackCheckResult(distance, dotProduct, true);
+    }
+    
     // [서상원님 코드] 보스 공격 판정
     public boolean canAttackPlayer(int playerX, int playerY) {
         if (!patternInProgress) return false;
         
         if (currentState == MELEE_ATTACK_1) {
             if (spriteNum == 1 && !meleeAttackFrame3Applied) {
-                BossPosition pos = calculateBossPosition();
-                double dx = playerX - pos.centerX;
-                double dy = playerY - pos.centerY;
-                double distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance <= attackRange) {
-                    double attackDirection = Math.atan2(dy, dx);
-                    double playerDirX = dx / distance;
-                    double playerDirY = dy / distance;
-                    double attackDirX = Math.cos(attackDirection);
-                    double attackDirY = Math.sin(attackDirection);
-                    double dotProduct = playerDirX * attackDirX + playerDirY * attackDirY;
-                    
-                    if (dotProduct >= 0.5) {
-                        meleeAttackFrame3Applied = true;
-                        return true;
-                    }
+                AttackCheckResult result = checkAttackRange(playerX, playerY, attackRange);
+                if (result.inRange && result.dotProduct >= 0.5) {
+                    meleeAttackFrame3Applied = true;
+                    return true;
                 }
             } else if (spriteNum == 7 && !meleeAttackFrame6Applied) {
-                BossPosition pos = calculateBossPosition();
-                double dx = playerX - pos.centerX;
-                double dy = playerY - pos.centerY;
-                double distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance <= attackRange) {
-                    double attackDirection = Math.atan2(dy, dx);
-                    double playerDirX = dx / distance;
-                    double playerDirY = dy / distance;
-                    double attackDirX = Math.cos(attackDirection);
-                    double attackDirY = Math.sin(attackDirection);
-                    double dotProduct = playerDirX * attackDirX + playerDirY * attackDirY;
-                    
-                    if (dotProduct >= 0.5) {
-                        meleeAttackFrame6Applied = true;
-                        return true;
-                    }
+                AttackCheckResult result = checkAttackRange(playerX, playerY, attackRange);
+                if (result.inRange && result.dotProduct >= 0.5) {
+                    meleeAttackFrame6Applied = true;
+                    return true;
                 }
             }
             return false;
@@ -683,21 +728,8 @@ public class Boss {
             int halfFrame = totalFrames / 2;
             if (spriteNum != halfFrame) return false;
             
-            BossPosition pos = calculateBossPosition();
-            double dx = playerX - pos.centerX;
-            double dy = playerY - pos.centerY;
-            double distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance > attackRange) return false;
-            
-            double attackDirection = Math.atan2(dy, dx);
-            double playerDirX = dx / distance;
-            double playerDirY = dy / distance;
-            double attackDirX = Math.cos(attackDirection);
-            double attackDirY = Math.sin(attackDirection);
-            double dotProduct = playerDirX * attackDirX + playerDirY * attackDirY;
-            
-            if (dotProduct >= 0.5) {
+            AttackCheckResult result = checkAttackRange(playerX, playerY, attackRange);
+            if (result.inRange && result.dotProduct >= 0.5) {
                 meleeAttackApplied = true;
                 return true;
             }
@@ -723,7 +755,7 @@ public class Boss {
     public void draw(Graphics2D g2, int cameraX, int cameraY) {
         if (!alive) return;
         
-        double drawY_world = this.y - (this.hitHeight - Y_OFFSET);
+        double drawY_world = getDrawYWorld();
         int screenX = (int)this.x - cameraX;
         int screenY = (int)drawY_world - cameraY;
         int renderState = currentState == ULTIMATE ? IDLE : currentState;
@@ -779,10 +811,9 @@ public class Boss {
         int scaledWidth = (int)(originalWidth * scaleRatio);
         int scaledHeight = drawHeight;
         
-        double spriteCenterX_world = this.x + (this.drawWidth * 0.5);
-        double spriteCenterY_world = drawY_world + (this.drawHeight * 0.5);
-        int spriteCenterX_screen = (int)spriteCenterX_world - cameraX;
-        int spriteCenterY_screen = (int)spriteCenterY_world - cameraY;
+        double[] center = getCenter();
+        int spriteCenterX_screen = (int)center[0] - cameraX;
+        int spriteCenterY_screen = (int)center[1] - cameraY;
         
         if (isDashingAngle) {
             boolean shouldFlip = (dashDirectionX < 0);

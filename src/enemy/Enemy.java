@@ -470,19 +470,35 @@ public class Enemy {
         return !alive || hp <= 0;
     }
     
+    // [통합] 위치 계산 헬퍼 메서드
+    private static final int Y_OFFSET = 48;
+    
+    private double getDrawYWorld() {
+        return this.y - (this.hitHeight - Y_OFFSET);
+    }
+    
+    private double[] getCenter() {
+        double drawY_world = getDrawYWorld();
+        return new double[]{
+            this.x + (this.drawWidth / 2.0),
+            drawY_world + (this.drawHeight / 2.0)
+        };
+    }
+    
     // [서상원님 코드] AI 업데이트: 플레이어 추적, 공격, 이동
     public void update(int targetX, int targetY) {
         if (!alive) return;
         
         lastPlayerX = targetX;
         lastPlayerY = targetY;
-        double drawY_world = this.y - (this.hitHeight - 48);
-        double enemyCenterX = this.x + (this.drawWidth / 2.0);
-        double enemyCenterY = drawY_world + (this.drawHeight / 2.0);
+        double[] center = getCenter();
+        double enemyCenterX = center[0];
+        double enemyCenterY = center[1];
         
+        // [통합] 거리 계산 헬퍼
         double dx = targetX - enemyCenterX;
         double dy = targetY - enemyCenterY;
-        double distance = Math.sqrt(dx*dx + dy*dy);
+        double distance = Math.sqrt(dx * dx + dy * dy);
 
         double flipDx = targetX - this.x;
         if (this.spriteDefaultFacesLeft) {
@@ -594,9 +610,9 @@ public class Enemy {
         }
         
         if (shouldCreate) {
-            double drawY_world = this.y - (this.hitHeight - 48);
-            double enemyCenterX = this.x + (this.drawWidth / 2.0);
-            double enemyCenterY = drawY_world + (this.drawHeight / 2.0);
+            double[] center = getCenter();
+            double enemyCenterX = center[0];
+            double enemyCenterY = center[1];
             double projectileSpeed = 7.0;
             int projectileDamage = type.getAttack();
             double projectileRange = attackRange * 2.0;
@@ -650,15 +666,16 @@ public class Enemy {
             return false;
         }
         
-        double drawY_world = this.y - (this.hitHeight - 48);
-        double enemyCenterX = this.x + (this.drawWidth / 2.0);
-        double enemyCenterY = drawY_world + (this.drawHeight / 2.0);
+        // [통합] 거리 및 방향 계산
+        double[] center = getCenter();
+        double enemyCenterX = center[0];
+        double enemyCenterY = center[1];
         
         double dx = playerX - enemyCenterX;
         double dy = playerY - enemyCenterY;
         double distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance > attackRange) {
+        if (distance > attackRange || distance == 0) {
             return false;
         }
         
@@ -750,8 +767,8 @@ public class Enemy {
         }
 
         boolean currentFlip = flip;
-        int drawY = screenY - (hitHeight - 48);
-        double drawY_world = this.y - (this.hitHeight - 48);
+        double drawY_world = getDrawYWorld();
+        int drawY = screenY - (hitHeight - Y_OFFSET);
         
         if (isAnimated && sprites != null && sprites[drawState] != null) {
             if (currentFlip) { 
@@ -799,8 +816,9 @@ public class Enemy {
                 } else if (!isRanged()) {
                     int attackRangeRadius = attackRange;
                     
-                    double enemyCenterX_world = this.x + (this.drawWidth / 2.0);
-                    double enemyCenterY_world = drawY_world + (this.drawHeight / 2.0);
+                    double[] center = getCenter();
+                    double enemyCenterX_world = center[0];
+                    double enemyCenterY_world = center[1];
                     
                     double dx = lastPlayerX - enemyCenterX_world;
                     double dy = lastPlayerY - enemyCenterY_world;
