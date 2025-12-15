@@ -75,6 +75,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private ArrayList<ItemType> acquiredItems = new ArrayList<>();
     public ArrayList<DamageText> damageTexts = new ArrayList<>();
     private ArrayList<Key> keys = new ArrayList<>();
+    
+    // [수정] 방별 아이템 관리 (각 방에 드롭된 아이템을 방별로 저장)
+    private java.util.Map<Integer, ArrayList<Item>> roomItems = new java.util.HashMap<>();
 
     private boolean keyW, keyA, keyS, keyD;
     
@@ -90,6 +93,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     
     // [서상원님 코드] 적 스폰 시스템 (맵 기반)
     private ArrayList<int[]> enemySpawnPoints = new ArrayList<>();
+    
+    // [수정] 클리어된 방 목록 (한번 클리어한 방은 다시 적이 스폰되지 않음)
+    private java.util.Set<Integer> clearedRooms = new java.util.HashSet<>();
     
     // [서충만님 코드] 맵 타일 및 방 관리
     public RoomData currentRoom;
@@ -154,6 +160,46 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         soundManager.playMusic(29); // [김민정님 코드] 타이틀 화면 BGM 재생
         
         startGameThread();
+    }
+    
+    // [수정] 사망 시 게임 초기화 (스테이지 1, 0번룸부터 시작)
+    private void resetGameOnDeath() {
+        // 모든 적 제거
+        enemies.clear();
+        boss = null;
+        
+        // 클리어된 방 목록 초기화
+        clearedRooms.clear();
+        
+        // 방별 아이템 목록 초기화
+        roomItems.clear();
+        
+        // 맵 초기화 (스테이지 1, 0번룸)
+        tileManager = new TileManager();
+        MapLoader.loadAllRooms(1);
+        currentRoom = MapLoader.getRoom(0);
+        
+        // 플레이어 스탯 초기화
+        player = new Player(this, keyH);
+        player.x = Constants.TILE_SIZE * 10;
+        player.y = Constants.TILE_SIZE * 6;
+        
+        // 카메라 초기화
+        cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
+        cameraY = player.y - Constants.WINDOW_HEIGHT / 2.0;
+        
+        // 무기 초기화
+        currentWeapon = WeaponType.PISTOL;
+        
+        // 아이템 및 기타 초기화
+        bullets.clear();
+        items.clear();
+        damageTexts.clear();
+        keys.clear();
+        acquiredItems.clear();
+        
+        // 스테이지 음악 재생
+        playStageMusic();
     }
 
     public void startGameThread() {
@@ -308,7 +354,15 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                         ItemType.WIND_CANDY
                     };
                     ItemType drop = possibleDrops[(int)(Math.random() * possibleDrops.length)];
-                    items.add(new Item(enemy.x, enemy.y, drop));
+                    Item newItem = new Item(enemy.x, enemy.y, drop);
+                    
+                    // [수정] 현재 방의 아이템 목록에 추가
+                    if (currentRoom != null) {
+                        int roomId = currentRoom.getRoomId();
+                        roomItems.putIfAbsent(roomId, new ArrayList<>());
+                        roomItems.get(roomId).add(newItem);
+                        items.add(newItem);
+                    }
                 }
 
                 enemiesToRemove.add(enemy);
@@ -318,6 +372,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         
         enemies.removeAll(enemiesToRemove);
         enemies.addAll(enemiesToAdd);
+        
+        // [수정] 방의 모든 적을 처치했을 때 방을 클리어된 목록에 추가
+        if (currentRoom != null && !hasAliveEnemies() && !clearedRooms.contains(currentRoom.getRoomId())) {
+            clearedRooms.add(currentRoom.getRoomId());
+        }
         
         // [김선욱님 코드] 총알 업데이트
         bullets.removeIf(b -> { b.update(); return !b.isActive(); });
@@ -343,28 +402,63 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             soundManager.stop();     // [김민정님 코드] 배경음악 정지
             soundManager.playSE(21); // [김민정님 코드] 플레이어 사망(게임오버) 효과음
         }
+        
+        // [수정] 보스 업데이트 (소리는 Boss 클래스 내부에서 재생)
+        if (boss != null && boss.alive) {
+            boss.update((int)playerX, (int)playerY);
+        }
     }
     
     // [서충만님 코드] 문 충돌 체크 및 방 이동: 플레이어가 문 타일('D')에 닿으면 연결된 방으로 이동
     private void checkDoorCollision(int tileX, int tileY, char[][] map) {
         if (currentRoom == null) return;
         
-        char tile = map[tileY][tileX];
-        if (tile != 'D') return;
+        // [수정] 방의 모든 적을 잡아야 문 이동 가능
+        if (hasAliveEnemies()) {
+            return;
+        }
         
+        // [수정] 플레이어가 실제로 문 타일('D')에 들어가면 이동
         String direction = null;
         
-        if (tileY <= 1 && tileX >= 8 && tileX <= 11) {
-            direction = "NORTH";
+        // 플레이어의 현재 타일과 주변 타일 체크
+        int mapHeight = map.length;
+        int mapWidth = map[0].length;
+        
+        // 현재 타일이 문인지 확인
+        if (tileY >= 0 && tileY < mapHeight && tileX >= 0 && tileX < mapWidth) {
+            if (map[tileY][tileX] == 'D') {
+                // 문의 위치로 방향 판단
+                if (tileY <= 2) {
+                    direction = "NORTH";
+                } else if (tileY >= mapHeight - 3) {
+                    direction = "SOUTH";
+                } else if (tileX <= 2) {
+                    direction = "WEST";
+                } else if (tileX >= mapWidth - 3) {
+                    direction = "EAST";
+                }
+            }
         }
-        else if (tileY >= 10 && tileX >= 8 && tileX <= 11) {
-            direction = "SOUTH";
-        }
-        else if (tileX <= 1 && tileY >= 5 && tileY <= 6) {
-            direction = "WEST";
-        }
-        else if (tileX >= 18 && tileY >= 5 && tileY <= 6) {
-            direction = "EAST";
+        
+        // 현재 타일이 문이 아니면 주변 타일도 체크 (플레이어가 타일 경계에 있을 수 있음)
+        if (direction == null) {
+            // 위쪽 타일
+            if (tileY > 0 && tileY - 1 < mapHeight && tileX < mapWidth && map[tileY - 1][tileX] == 'D') {
+                direction = "NORTH";
+            }
+            // 아래쪽 타일
+            else if (tileY + 1 < mapHeight && tileX < mapWidth && map[tileY + 1][tileX] == 'D') {
+                direction = "SOUTH";
+            }
+            // 왼쪽 타일
+            else if (tileX > 0 && tileY < mapHeight && tileX - 1 < mapWidth && map[tileY][tileX - 1] == 'D') {
+                direction = "WEST";
+            }
+            // 오른쪽 타일
+            else if (tileX + 1 < mapWidth && tileY < mapHeight && map[tileY][tileX + 1] == 'D') {
+                direction = "EAST";
+            }
         }
         
         if (direction != null && currentRoom.hasConnection(direction)) {
@@ -397,6 +491,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                             break;
                     }
                     
+                    // [수정] 방 이동 시 현재 방의 아이템만 표시
+                    int nextRoomId = nextRoom.getRoomId();
+                    items.clear();
+                    if (roomItems.containsKey(nextRoomId)) {
+                        items.addAll(roomItems.get(nextRoomId));
+                    }
+                    
                     // [서상원님 코드] 새 방으로 이동 시 적 스폰 포인트 찾기 및 스폰
                     findEnemySpawnPoints();
                     spawnEnemiesFromMap();
@@ -407,9 +508,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
     }
     
-    // [서상원님 코드] 맵에서 E 타일 위치 찾기
+    // [서상원님 코드] 맵에서 E 타일(일반몹)과 L 타일(정예몹) 위치 찾기
+    private ArrayList<int[]> eliteSpawnPoints = new ArrayList<>();
+    
     private void findEnemySpawnPoints() {
         enemySpawnPoints.clear();
+        eliteSpawnPoints.clear();
         if (currentRoom == null) return;
         
         char[][] map = currentRoom.getMap();
@@ -419,31 +523,32 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             for (int x = 0; x < map[y].length; x++) {
                 if (map[y][x] == 'E') {
                     enemySpawnPoints.add(new int[]{x, y});
+                } else if (map[y][x] == 'L') {
+                    eliteSpawnPoints.add(new int[]{x, y});
                 }
             }
         }
     }
     
-    // [서상원님 코드] 스테이지별 적 타입 랜덤 선택
+    // [서상원님 코드] 스테이지별 일반 적 타입 랜덤 선택
     private EnemyType getRandomEnemyTypeForStage(int stage) {
         EnemyType[] types;
         
         switch (stage) {
             case 1:
-                types = new EnemyType[]{EnemyType.SLIME, EnemyType.WOLF, EnemyType.GOBLIN, EnemyType.MINOTAUR};
+                types = new EnemyType[]{EnemyType.SLIME, EnemyType.WOLF, EnemyType.GOBLIN};
                 break;
             case 2:
-                types = new EnemyType[]{EnemyType.SNAKE, EnemyType.MUDGOLEM, EnemyType.GOLEM, EnemyType.SPORE_FLOWER};
+                types = new EnemyType[]{EnemyType.SNAKE, EnemyType.MUDGOLEM, EnemyType.SPORE_FLOWER};
                 break;
             case 3:
-                types = new EnemyType[]{EnemyType.FROZEN_KNIGHT, EnemyType.YETI, EnemyType.SNOW_MAGE, EnemyType.ICE_GOLEM};
+                types = new EnemyType[]{EnemyType.FROZEN_KNIGHT, EnemyType.YETI, EnemyType.SNOW_MAGE};
                 break;
             case 4:
                 types = new EnemyType[]{
                     EnemyType.BOMB_SKULL, 
                     EnemyType.HELL_HOUND, 
                     EnemyType.FIRE_IMP, 
-                    EnemyType.HELL_KNIGHT, 
                     EnemyType.MAGMA_SLIME_BIG,
                     EnemyType.MAGMA_SLIME_SMALL,
                     EnemyType.ORC
@@ -458,9 +563,29 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         return types[(int)(Math.random() * types.length)];
     }
     
-    // [서상원님 코드] 맵의 E 타일 위치에서 적 스폰
+    // [수정] 스테이지별 정예몹 타입 반환
+    private EnemyType getEliteEnemyTypeForStage(int stage) {
+        switch (stage) {
+            case 1:
+                return EnemyType.MINOTAUR;
+            case 2:
+                return EnemyType.GOLEM;
+            case 3:
+                return EnemyType.ICE_GOLEM;
+            case 4:
+                return EnemyType.HELL_KNIGHT;
+            default:
+                return EnemyType.MINOTAUR;
+        }
+    }
+    
+    // [서상원님 코드] 맵의 E 타일(일반몹)과 L 타일(정예몹) 위치에서 적 스폰
     private void spawnEnemiesFromMap() {
-        if (enemySpawnPoints.isEmpty()) return;
+        // [수정] 이미 클리어된 방이면 적을 스폰하지 않음
+        if (currentRoom != null && clearedRooms.contains(currentRoom.getRoomId())) {
+            enemies.clear();
+            return;
+        }
         
         int currentStage = MapLoader.getCurrentStage();
         enemies.clear();
@@ -475,6 +600,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
             return;
         }
         
+        // 일반몹 스폰 (E 타일)
         for (int[] spawnPoint : enemySpawnPoints) {
             int tileX = spawnPoint[0];
             int tileY = spawnPoint[1];
@@ -487,6 +613,31 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 enemies.add(new Enemy(enemyType, spawnX, spawnY));
             }
         }
+        
+        // 정예몹 스폰 (L 타일)
+        EnemyType eliteType = getEliteEnemyTypeForStage(currentStage);
+        for (int[] spawnPoint : eliteSpawnPoints) {
+            int tileX = spawnPoint[0];
+            int tileY = spawnPoint[1];
+            
+            double spawnX = (tileX + 0.5) * Constants.TILE_SIZE;
+            double spawnY = (tileY + 0.5) * Constants.TILE_SIZE;
+            
+            enemies.add(new Enemy(eliteType, spawnX, spawnY));
+        }
+    }
+    
+    // [수정] 방에 살아있는 적이 있는지 확인
+    private boolean hasAliveEnemies() {
+        for (Enemy enemy : enemies) {
+            if (enemy.alive) {
+                return true;
+            }
+        }
+        if (boss != null && boss.alive) {
+            return true;
+        }
+        return false;
     }
     
     // [자폭해골] 자폭 처리: 범위 내 플레이어에게 데미지 적용
@@ -517,6 +668,15 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         findEnemySpawnPoints();
         spawnEnemiesFromMap();
         boss = null;
+        
+        // [수정] 현재 방의 아이템 로드
+        if (currentRoom != null) {
+            int roomId = currentRoom.getRoomId();
+            items.clear();
+            if (roomItems.containsKey(roomId)) {
+                items.addAll(roomItems.get(roomId));
+            }
+        }
     }
     
     // [서충만님 코드] 맵 경계 테두리 그리기: 맵 경계를 초록색 선과 모서리 사각형으로 표시
@@ -651,6 +811,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 item.pickUp();
                 acquiredItems.add(item.getType());
                 applyItemEffect(item.getType());
+                
+                // [수정] 방별 아이템 목록에서도 제거
+                if (currentRoom != null) {
+                    int roomId = currentRoom.getRoomId();
+                    if (roomItems.containsKey(roomId)) {
+                        roomItems.get(roomId).remove(item);
+                    }
+                }
                 
                 // [김민정님 코드] 아이템 획득 사운드
                 soundManager.playSE(15); // [김민정님 코드] 아이템 획득 소리
@@ -896,7 +1064,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
         else if (gameState == gameOverState) {
             if (code == KeyEvent.VK_R) {
-                setupGame();
+                resetGameOnDeath();
                 gameState = playState;
             }
         }

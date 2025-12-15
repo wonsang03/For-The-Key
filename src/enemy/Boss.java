@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
+import system.SoundManager;
 
 // [서상원님 코드] 보스 시스템: 패턴 공격, 대시, 투사체
 public class Boss {
@@ -20,6 +21,8 @@ public class Boss {
     public int drawWidth;
     public int drawHeight;
     public boolean alive = true;
+    
+    private SoundManager soundManager;
     
     private int attackRange = 200;
     private int attackDamage = 50;
@@ -84,11 +87,12 @@ public class Boss {
     private final int ULTIMATE_PATTERN_DURATION = 90;
 
     // [서상원님 코드] 보스 생성자
-    public Boss(double startX, double startY) {
+    public Boss(double startX, double startY, SoundManager soundManager) {
         this.x = startX;
         this.y = startY;
         this.maxHp = 10000;
         this.hp = this.maxHp;
+        this.soundManager = soundManager;
         
         this.hitWidth = 120; 
         this.hitHeight = 120; 
@@ -435,6 +439,15 @@ public class Boss {
         meleeAttackApplied = false;
         meleeAttackFrame3Applied = false;
         meleeAttackFrame6Applied = false;
+        
+        // [수정] 보스 공격 패턴 소리 재생
+        if (soundManager != null) {
+            if (pattern == MELEE_ATTACK_1 || pattern == MELEE_ATTACK_2) {
+                soundManager.playSE(22); // enemy_swing1 (무기 휘두르는 소리)
+            } else if (pattern == ULTIMATE) {
+                soundManager.playSE(24); // enemy_throw (투사체 소리)
+            }
+        }
         
         if (pattern == MELEE_ATTACK_2) {
             dashCount = 1;
