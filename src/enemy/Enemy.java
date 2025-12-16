@@ -193,10 +193,10 @@ public class Enemy {
             case YETI:
                 this.attackRange = 100;
                 this.moveRange = 500;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
+                this.hitWidth = 100; 
+                this.hitHeight = 70;
+                this.drawWidth = 100; 
+                this.drawHeight = 70;
                 this.spriteDefaultFacesLeft = false;
                 break;
             case SNAKE:
@@ -915,7 +915,15 @@ public class Enemy {
         
         public void draw(Graphics2D g2, int cameraX, int cameraY) {
             if (!active) return;
-            // 히트박스 그리기 제거 (디버깅용)
+            
+            // 디버깅용: 투사체를 네모로 표시
+            int screenX = (int)x - cameraX;
+            int screenY = (int)y - cameraY;
+            
+            g2.setColor(Color.ORANGE);
+            g2.fillRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
+            g2.setColor(Color.RED);
+            g2.drawRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
         }
         
         public Rectangle getHitBox() {

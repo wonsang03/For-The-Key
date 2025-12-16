@@ -1838,9 +1838,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
         else if (gameState == gameClearState) {
             if (code == KeyEvent.VK_R) {
-                // 다음 스테이지로 이동
-                nextStage();
-                gameState = playState; // 게임 상태를 플레이 상태로 변경
+                // 타이틀 화면으로 이동 및 사운드 초기화
+                soundManager.stop(); // 모든 사운드 정지
+                gameState = titleState; // 타이틀 화면으로
+                soundManager.playMusic(29); // 타이틀 BGM 재생
             }
         }
     }

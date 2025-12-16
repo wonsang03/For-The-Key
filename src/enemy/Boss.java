@@ -1,5 +1,6 @@
 package enemy;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -85,12 +86,15 @@ public class Boss {
     private BufferedImage projectileSprite = null;
     private int ultimatePatternTimer = 0;
     private final int ULTIMATE_PATTERN_DURATION = 90;
+    
+    private int lastPlayerX = 0;
+    private int lastPlayerY = 0;
 
     // [서상원님 코드] 보스 생성자
     public Boss(double startX, double startY, SoundManager soundManager) {
         this.x = startX;
         this.y = startY;
-        this.maxHp = 20000;
+        this.maxHp = 15000;
         this.hp = this.maxHp;
         this.soundManager = soundManager;
         
@@ -317,6 +321,9 @@ public class Boss {
     // [서상원님 코드] 보스 업데이트: 패턴 선택, 애니메이션, 이동
     public void update(int targetX, int targetY) {
         if (!alive) return;
+        
+        lastPlayerX = targetX;
+        lastPlayerY = targetY;
         
         flip = this.spriteDefaultFacesLeft ? (targetX > this.x) : (targetX <= this.x);
         if (attackCooldown > 0) attackCooldown--;
@@ -757,6 +764,70 @@ public class Boss {
         g2.drawRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
         
         drawProjectiles(g2, cameraX, cameraY);
+        
+        // 보스 공격 범위 및 돌진 거리 시각화
+        drawBossRange(g2, cameraX, cameraY);
+    }
+    
+    // 보스 공격 범위 및 돌진 거리 시각화
+    private void drawBossRange(Graphics2D g2, int cameraX, int cameraY) {
+        BossPosition pos = calculateBossPosition();
+        int centerScreenX = (int)pos.centerX - cameraX;
+        int centerScreenY = (int)pos.centerY - cameraY;
+        
+        // 공격 범위 표시 (부채꼴) - 공격할 때만 표시
+        if (patternInProgress && (currentState == MELEE_ATTACK_1 || currentState == MELEE_ATTACK_2)) {
+            int attackRangeRadius = attackRange;
+            
+            double dx = lastPlayerX - pos.centerX;
+            double dy = lastPlayerY - pos.centerY;
+            double angle = Math.atan2(dy, dx);
+            
+            double angleDeg = Math.toDegrees(angle);
+            double fillArcAngle = -angleDeg;
+            double startAngleDeg = fillArcAngle - 60;
+            int arcAngleDeg = 120;
+            
+            int startAngle = (int)Math.round(startAngleDeg);
+            int arcAngle = arcAngleDeg;
+            
+            g2.setColor(new Color(255, 0, 0, 150)); // 반투명 빨간색
+            g2.fillArc(
+                centerScreenX - attackRangeRadius,
+                centerScreenY - attackRangeRadius,
+                attackRangeRadius * 2,
+                attackRangeRadius * 2,
+                startAngle,
+                arcAngle
+            );
+            
+            g2.setColor(Color.RED);
+            g2.setStroke(new BasicStroke(3.0f));
+            g2.drawArc(
+                centerScreenX - attackRangeRadius,
+                centerScreenY - attackRangeRadius,
+                attackRangeRadius * 2,
+                attackRangeRadius * 2,
+                startAngle,
+                arcAngle
+            );
+        }
+        
+        // 돌진 중일 때 돌진 거리 표시 (빨간색 네모)
+        if (isDashingAngle && totalDashDistance > 0) {
+            double endX = pos.centerX + dashDirectionX * totalDashDistance;
+            double endY = pos.centerY + dashDirectionY * totalDashDistance;
+            int endScreenX = (int)endX - cameraX;
+            int endScreenY = (int)endY - cameraY;
+            
+            // 돌진 목표 지점을 빨간색 네모로 표시
+            int rectSize = 30;
+            g2.setColor(new Color(255, 0, 0, 200)); // 반투명 빨간색
+            g2.fillRect(endScreenX - rectSize / 2, endScreenY - rectSize / 2, rectSize, rectSize);
+            g2.setColor(Color.RED);
+            g2.setStroke(new BasicStroke(3.0f));
+            g2.drawRect(endScreenX - rectSize / 2, endScreenY - rectSize / 2, rectSize, rectSize);
+        }
     }
 
     public void takeDamage(int damage) {
