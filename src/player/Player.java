@@ -50,7 +50,7 @@ public class Player extends Entity {
     // [김선욱님 코드] 스탯 시스템: 아이템 효과 적용을 위한 필드 추가
     private int maxHP = 100;
     private int hp = 100;
-    private double attackMultiplier = 1.0;
+    private double attackMultiplier = 100.0;
     private double attackSpeedBonus = 0.0;
     private double baseSpeed = 4.0;
     
