@@ -24,8 +24,8 @@ public class Boss {
     
     private SoundManager soundManager;
     
-    private int attackRange = 200;
-    private int attackDamage = 50;
+    private int attackRange = 250;
+    private int attackDamage = 150;
     
     public final int IDLE = 0;
     public final int MOVE = 1;
@@ -55,7 +55,7 @@ public class Boss {
     private int spriteCounter = 0;
     private int spriteNum = 0;
     private final int ANIMATION_SPEED = 9;
-    private final int DASH_SLOW_ANIMATION_SPEED = 18;
+    private final int DASH_SLOW_ANIMATION_SPEED = 12;
     
     private int[][][] frameSizes;
     
@@ -99,7 +99,7 @@ public class Boss {
         this.drawWidth = 120; 
         this.drawHeight = 120;
         
-        this.attackRange = 200;
+        this.attackRange = 250;
         this.spriteDefaultFacesLeft = false;
         
         loadImage(); 
@@ -719,14 +719,6 @@ public class Boss {
         return false;
     }
     
-    private boolean isHalfFrame() {
-        if (sprites == null || sprites[currentState] == null || sprites[currentState].length == 0) {
-            return false;
-        }
-        int totalFrames = sprites[currentState].length;
-        int halfFrame = totalFrames / 2;
-        return (spriteNum >= halfFrame && spriteNum <= halfFrame + 1);
-    }
     
     public int getAttackDamage() {
         return attackDamage;
@@ -879,12 +871,8 @@ public class Boss {
                 g2.translate(-hitWidth / 2, -hitHeight / 2);
                 g2.drawImage(sprite, 0, 0, hitWidth, hitHeight, null);
                 g2.setTransform(oldTransform);
-            } else {
-                g2.setColor(new Color(128, 0, 255));
-                g2.fillRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
-                g2.setColor(new Color(200, 100, 255));
-                g2.drawRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
             }
+            // 히트박스 그리기 제거 (디버깅용)
         }
         
         public Rectangle getHitBox() {

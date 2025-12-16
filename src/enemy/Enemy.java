@@ -138,7 +138,7 @@ public class Enemy {
                 this.spriteDefaultFacesLeft = false;
                 break;
             case MAGMA_SLIME_BIG:
-                this.attackRange = 350;
+                this.attackRange = 150;
                 this.moveRange = 700;
                 this.hitWidth = 140; 
                 this.hitHeight = 140;
@@ -156,7 +156,7 @@ public class Enemy {
                 this.spriteDefaultFacesLeft = false;
                 break;
             case FROZEN_KNIGHT:
-                this.attackRange = 200;
+                this.attackRange = 100;
                 this.moveRange = 500;
                 this.hitWidth = 150; 
                 this.hitHeight = 100;
@@ -191,7 +191,7 @@ public class Enemy {
                 this.spriteDefaultFacesLeft = false;
                 break;
             case YETI:
-                this.attackRange = 200;
+                this.attackRange = 100;
                 this.moveRange = 500;
                 this.hitWidth = 200; 
                 this.hitHeight = 150;
@@ -209,12 +209,12 @@ public class Enemy {
                 this.spriteDefaultFacesLeft = false;
                 break;
             case MUDGOLEM:
-                this.attackRange = 200;
+                this.attackRange = 100;
                 this.moveRange = 500;
-                this.hitWidth = 200; 
-                this.hitHeight = 150;
-                this.drawWidth = 200; 
-                this.drawHeight = 150;
+                this.hitWidth = 90; 
+                this.hitHeight = 70;
+                this.drawWidth = 90; 
+                this.drawHeight = 70;
                 break;
             case BOMB_SKULL:
                 this.attackRange = 100;
@@ -673,6 +673,23 @@ public class Enemy {
         return type.getAttack();
     }
     
+    // 🔹 투사체와 플레이어 충돌 체크 및 데미지 처리
+    // 충돌한 투사체가 있으면 데미지를 반환하고, 없으면 -1 반환
+    public int checkProjectileCollision(Rectangle playerRect) {
+        if (!isRanged()) return -1;
+        
+        for (SlimeProjectile projectile : projectiles) {
+            if (!projectile.isActive()) continue;
+            
+            Rectangle projectileRect = projectile.getHitBox();
+            if (playerRect.intersects(projectileRect)) {
+                projectile.deactivate();
+                return projectile.getDamage();
+            }
+        }
+        return -1;
+    }
+    
     // [사운드] 공격 사운드 재생 여부 확인
     public boolean shouldPlayAttackSound() {
         if (currentState != ATTACK || !attackAnimationInProgress) return false;
@@ -752,16 +769,8 @@ public class Enemy {
             }
         } 
 
-        g2.setColor(Color.RED);
-        g2.setStroke(new BasicStroke(2.0f));
-
         double spriteCenterX = screenX + (drawWidth / 2.0);
         double spriteCenterY = (drawY_world - cameraY) + (drawHeight / 2.0);
-        
-        int hitBoxX = (int)(spriteCenterX - (hitWidth / 2.0));
-        int hitBoxY = (int)(spriteCenterY - (hitHeight / 2.0));
-
-        g2.drawRect(hitBoxX, hitBoxY, hitWidth, hitHeight);
         
         if (currentState == ATTACK && attackAnimationInProgress) {
             boolean shouldShowHitbox = isHalfFrame();
@@ -906,22 +915,7 @@ public class Enemy {
         
         public void draw(Graphics2D g2, int cameraX, int cameraY) {
             if (!active) return;
-            
-            int screenX = (int)x - cameraX;
-            int screenY = (int)y - cameraY;
-            
-            if (isRanged) {
-                g2.setColor(Color.YELLOW);
-                g2.fillRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
-                g2.setColor(new Color(200, 150, 0));
-                g2.drawRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
-            } 
-            else {
-                g2.setColor(Color.GREEN);
-                g2.fillRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
-                g2.setColor(Color.WHITE);
-                g2.drawRect(screenX - hitWidth / 2, screenY - hitHeight / 2, hitWidth, hitHeight);
-            }
+            // 히트박스 그리기 제거 (디버깅용)
         }
         
         public Rectangle getHitBox() {

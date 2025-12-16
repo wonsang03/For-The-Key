@@ -22,7 +22,6 @@ public class Box {
             closedImg = ImageIO.read(new File("res/item/box_closed.png"));
             openedImg = ImageIO.read(new File("res/item/box_open.png"));
         } catch (Exception e) {
-            System.out.println("⚠️ 상자 이미지 로드 실패: " + e.getMessage());
         }
     }
 
@@ -41,7 +40,6 @@ public class Box {
     public void open() {
         if (!opened) {
             opened = true;
-            System.out.println("📦 상자 열림!");
         }
     }
 }

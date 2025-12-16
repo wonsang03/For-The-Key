@@ -50,7 +50,7 @@ public class Player extends Entity {
     // [김선욱님 코드] 스탯 시스템: 아이템 효과 적용을 위한 필드 추가
     private int maxHP = 100;
     private int hp = 100;
-    private double attackMultiplier = 1.0;
+    private double attackMultiplier = 100.0;
     private double attackSpeedBonus = 0.0;
     private double baseSpeed = 4.0;
     
@@ -122,7 +122,6 @@ public class Player extends Entity {
                 }
             }
             
-            System.out.println("플레이어 이미지 로드 성공: " + file.getAbsolutePath());
             
         } catch (IOException e) {
             e.printStackTrace();
@@ -216,7 +215,6 @@ public class Player extends Entity {
                 ghostCloakTimer--;
                 if (ghostCloakTimer <= 0) {
                     invincible = false;
-                    System.out.println("👻 유령 망토 무적 종료");
                 }
             } else {
                 // 일반 피격 무적 (약 0.33초)
@@ -369,13 +367,11 @@ public class Player extends Entity {
         // [김민정님 코드] 무적 상태 시작
         invincible = true;
 
-        System.out.println("플레이어 피격! 데미지: " + damage + " / 남은 체력: " + this.hp);
         
         // [김민정님 코드] 사망 처리
         if (this.hp <= 0) {
             this.hp = 0;
             // gp.soundManager.playSE(21); // (필요 시 주석 해제) 플레이어 사망음
-            System.out.println("플레이어 사망!");
         }
     }
 
@@ -385,7 +381,6 @@ public class Player extends Entity {
         this.invincible = true;
         this.ghostCloakTimer = GHOST_CLOAK_DURATION; // 5초 (300프레임)
         this.invincibleCounter = 0;
-        System.out.println("👻 유령 망토 무적 발동! (5초간 무적)");
     }
     
     // [민정 추가] 무기 교체 (Q키 누르면 호출)
@@ -397,7 +392,6 @@ public class Player extends Entity {
         if (currentWeaponIndex >= inventory.size()) {
             currentWeaponIndex = 0;
         }
-        System.out.println("무기 교체! 현재 무기: " + inventory.get(currentWeaponIndex).getName());
 
         // GamePanel 쪽 currentWeapon(WeaponType)도 함께 동기화
         if (gp != null) {
@@ -442,7 +436,6 @@ public class Player extends Entity {
 
             // 열쇠 개수 확인
             if (currentKeyCount >= needed) {
-                System.out.println("스테이지 클리어! (필요 열쇠: " + needed + ")");
 
                 gp.soundManager.playSE(14); // 철컥 소리
                 gp.soundManager.playSE(11); // 클리어 소리
@@ -451,7 +444,6 @@ public class Player extends Entity {
 
                 gp.keyH.fPressed = false; // 중복 입력 방지
             } else {
-                System.out.println("열쇠가 부족합니다! (현재: " + currentKeyCount + " / 필요: " + needed + ")");
             }
         }
     }
@@ -526,7 +518,6 @@ public class Player extends Entity {
         if (droppedWeapon != null) {
             dropWeaponOnGround(droppedWeapon, this.x, this.y); 
         } 
-        System.out.println("무기 획득: " + newWeapon.getName());
 
         // 새 무기 장착 후에도 GamePanel 쪽 무기 타입과 동기화
         if (gp != null) {

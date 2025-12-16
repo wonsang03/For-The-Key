@@ -30,6 +30,7 @@ public class Item {
         this.type = type;
 
         loadSpriteSheet();
+        
         setupSpriteRegion(type);
     }
 
@@ -141,7 +142,26 @@ public class Item {
         // [김선욱님 코드] 🔹 무기 픽업이면 무기 이미지로 표시
         if (weaponPickup && weaponImage != null && weaponType != null) {
             int size = 42;
-            g2.drawImage(weaponImage, (int)(x - size / 2), (int)(y - size / 2), size, size, null);
+            int drawX = (int)(x - size / 2);
+            int drawY = (int)(y - size / 2);
+
+            // [김선욱님 코드] 🔹 등급별 Glow 색상 설정
+            Color glowColor = switch (weaponType.getRarity()) {
+                case RUSTY -> new Color(128, 128, 128, 120);
+                case NORMAL -> new Color(255, 255, 255, 100);
+                case IRON -> new Color(100, 200, 255, 150);
+                case SHARP -> new Color(255, 128, 0, 160);
+                case MASTER -> new Color(255, 215, 0, 180);
+                default -> new Color(255, 255, 255, 80);
+            };
+
+            // [김선욱님 코드] 🔹 Glow(빛) 효과 추가
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(glowColor);
+            g2.fillOval(drawX - 6, drawY - 6, size + 12, size + 12);
+
+            // [김선욱님 코드] 🔹 무기 이미지 그리기
+            g2.drawImage(weaponImage, drawX, drawY, size, size, null);
 
             // [김선욱님 코드] 🔹 등급 이름 표시 (색상 구분)
             String name = (weaponType.getDisplayName() != null) ? weaponType.getDisplayName() : weaponType.getName();
@@ -173,7 +193,6 @@ public class Item {
         g2.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
         g2.drawString(type.getName(), (int)x - 10, (int)y - 5);
     }
-
     public Rectangle getBounds() {
         if (weaponPickup) {
             return new Rectangle((int)x - 21, (int)y - 21, 42, 42);
