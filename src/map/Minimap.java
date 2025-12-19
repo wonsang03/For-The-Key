@@ -22,16 +22,27 @@ public class Minimap {
 
     // 색상 설정
     private static final Color CURRENT_ROOM_COLOR = new Color(100, 200, 255);  // 현재 방 (밝은 파랑)
-    private static final Color VISITED_ROOM_COLOR = new Color(150, 150, 150);  // 방문한 방 (회색)
-    private static final Color CONNECTION_COLOR = new Color(100, 100, 100);     // 연결선 (어두운 회색)
-    private static final Color BORDER_COLOR = new Color(200, 200, 200);         // 테두리
+    private static final Color UNVISITED_ROOM_COLOR = new Color(80, 80, 80);   // 미방문 방 (어두운 회색)
+    private static final Color NORMAL_ROOM_COLOR = new Color(150, 150, 150);   // 일반 방 (회색)
+    private static final Color KEY_ROOM_COLOR = new Color(255, 215, 0);        // 열쇠 방 (금색)
+    private static final Color START_ROOM_COLOR = new Color(100, 255, 100);    // 시작 방 (녹색)
+    private static final Color BOSS_ROOM_COLOR = new Color(220, 20, 60);       // 보스 방 (빨간색)
+    private static final Color CONNECTION_COLOR = new Color(100, 100, 100);    // 연결선 (어두운 회색)
+    private static final Color BORDER_COLOR = new Color(200, 200, 200);        // 테두리
 
     // 각 방의 위치를 저장 (roomId -> {x, y})
     private Map<Integer, int[]> roomPositions;
 
+    // 방문한 방 ID를 저장
+    private java.util.Set<Integer> visitedRooms;
+
     public Minimap() {
         roomPositions = new HashMap<>();
+        visitedRooms = new java.util.HashSet<>();
         calculateRoomPositions();
+
+        // 시작 방(Room 0)은 기본적으로 방문한 것으로 표시
+        visitedRooms.add(0);
     }
 
     /**
@@ -93,14 +104,24 @@ public class Minimap {
     }
 
     /**
+     * 방을 방문한 것으로 표시
+     * @param roomId 방문한 방의 ID
+     */
+    public void visitRoom(int roomId) {
+        visitedRooms.add(roomId);
+    }
+
+    /**
      * 미니맵 렌더링
      * @param g2 Graphics2D 객체
      * @param currentRoomId 현재 플레이어가 있는 방 ID
      */
     public void render(Graphics2D g2, int currentRoomId) {
-        // 미니맵 위치 (오른쪽 상단)
+        // 현재 방을 방문한 것으로 표시
+        visitRoom(currentRoomId);
+        // 미니맵 위치 (오른쪽 하단)
         int minimapX = Constants.WINDOW_WIDTH - MINIMAP_PADDING - (ROOM_SIZE + ROOM_SPACING) * 5;
-        int minimapY = MINIMAP_PADDING;
+        int minimapY = Constants.WINDOW_HEIGHT - MINIMAP_PADDING - (ROOM_SIZE + ROOM_SPACING) * 6;
 
         // 먼저 연결선 그리기 (방 아래에 표시)
         renderConnections(g2, minimapX, minimapY);
@@ -185,11 +206,37 @@ public class Minimap {
         // 현재 방인지 확인
         boolean isCurrent = (roomId == currentRoomId);
 
+        // 방문 여부 확인
+        boolean isVisited = visitedRooms.contains(roomId);
+
+        // 방 타입 확인
+        RoomData roomData = MapLoader.getRoom(roomId);
+        String roomType = (roomData != null) ? roomData.getRoomType() : "NORMAL";
+
         // 방 채우기
         if (isCurrent) {
+            // 현재 방은 항상 밝은 파랑색
             g2.setColor(CURRENT_ROOM_COLOR);
+        } else if (!isVisited) {
+            // 미방문 방은 어두운 회색
+            g2.setColor(UNVISITED_ROOM_COLOR);
         } else {
-            g2.setColor(VISITED_ROOM_COLOR);
+            // 방문한 방은 타입에 따라 색상 결정
+            switch (roomType) {
+                case "START":
+                    g2.setColor(START_ROOM_COLOR);
+                    break;
+                case "KEY":
+                    g2.setColor(KEY_ROOM_COLOR);
+                    break;
+                case "BOSS":
+                    g2.setColor(BOSS_ROOM_COLOR);
+                    break;
+                case "NORMAL":
+                default:
+                    g2.setColor(NORMAL_ROOM_COLOR);
+                    break;
+            }
         }
         g2.fillRect(x, y, ROOM_SIZE, ROOM_SIZE);
 
@@ -198,10 +245,14 @@ public class Minimap {
         g2.setStroke(new BasicStroke(2));
         g2.drawRect(x, y, ROOM_SIZE, ROOM_SIZE);
 
-        // 방 번호 표시 (선택사항)
+        // 텍스트 표시
+        g2.setColor(Color.WHITE);
         if (isCurrent) {
-            g2.setColor(Color.WHITE);
+            // 현재 방은 방 번호 표시
             g2.drawString(String.valueOf(roomId), x + ROOM_SIZE / 2 - 5, y + ROOM_SIZE / 2 + 5);
+        } else if (!isVisited) {
+            // 미방문 방은 물음표 표시
+            g2.drawString("?", x + ROOM_SIZE / 2 - 5, y + ROOM_SIZE / 2 + 5);
         }
     }
 }

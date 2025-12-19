@@ -9,7 +9,7 @@ public enum TileType {
     WALL('W', Color.DARK_GRAY, true),      // 벽
     FLOOR('.', Color.LIGHT_GRAY, false),   // 바닥
     DOOR('D', Color.ORANGE, false),        // 방 이동 문
-    EXIT('E', Color.YELLOW, false);        // 다음 스테이지 문
+    EXIT('X', Color.YELLOW, false);        // 다음 스테이지 문
 
     private final char symbol;      // 맵 파일에서 사용하는 심볼
     private final Color color;      // 렌더링 색상
