@@ -445,7 +445,15 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                                             ItemType.ELIXIR,
                                             ItemType.GHOST_CLOAK
                                         };
+
+                                        ItemType dropActive =
+                                            activeDrops[(int)(Math.random() * activeDrops.length)];
+
+                                        items.add(new Item(enemy.x, enemy.y, dropActive));
+
+                                        System.out.println("🎁 정예몹 액티브 아이템 드롭: " + dropActive.getName());
                                     }
+                                
                                 }
                                 else {
                                     // 🔹 일반몹: 80% 확률로 기본 3종 드롭, 20%는 드롭 없음
