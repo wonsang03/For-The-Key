@@ -52,7 +52,7 @@ public class Item {
         try {
             spriteSheet = ImageIO.read(new File("res/item/items.png"));
         } catch (IOException e) {
-            System.out.println("❌ items.png 로드 실패");
+            // 이미지 로드 실패 시 조용히 처리
         }
     }
 

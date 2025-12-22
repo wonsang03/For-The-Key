@@ -461,7 +461,7 @@ public class Enemy {
         return !alive || hp <= 0;
     }
     
-    // [서상원님 코드] AI 업데이트: 플레이어 추적, 공격, 이동
+    // [서상원님 코드] AI 업데이트: 플레이어 추적, 공격, 이동 (AI 활용)
     public void update(int targetX, int targetY) {
         if (!alive) return;
         
@@ -566,7 +566,7 @@ public class Enemy {
         updateProjectiles();
     }
     
-    // [서상원님 코드] 투사체 생성
+    // [서상원님 코드] 투사체 생성 (AI 활용)
     private void createProjectileIfNeeded(int targetX, int targetY) {
         if (!isRanged()) return;
         if (currentState != ATTACK) return;
@@ -609,7 +609,7 @@ public class Enemy {
         }
     }
     
-    // [서상원님 코드] 투사체 업데이트
+    // [서상원님 코드] 투사체 업데이트 (AI 활용)
     private void updateProjectiles() {
         projectiles.removeIf(p -> {
             p.update();
@@ -709,10 +709,10 @@ public class Enemy {
             case SLIME:
             case MAGMA_SLIME_BIG:
             case MAGMA_SLIME_SMALL:
-                return 25; // slime_walk
+                return 25; 
             case WOLF:
             case HELL_HOUND:
-                return 26; // bite
+                return 26; 
             case GOBLIN:
             case MINOTAUR:
             case HELL_KNIGHT:
@@ -862,7 +862,7 @@ public class Enemy {
         drawProjectiles(g2, cameraX, cameraY);
     }
     
-    // [서상원님 코드] 투사체 클래스: 원거리 몬스터가 발사하는 투사체 관리
+    // [서상원님 코드] 투사체 클래스: 원거리 몬스터가 발사하는 투사체 관리 (AI 활용)
     private class SlimeProjectile {
         private double x, y;
         private double dx, dy;

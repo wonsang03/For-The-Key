@@ -35,9 +35,7 @@ public class SpriteCursorAnimator {
             }
 
             loaded = true;
-            System.out.println("✅ 커서 스프라이트 로드 완료 (" + frameCount + " 프레임)");
         } catch (Exception e) {
-            System.out.println("⚠️ 커서 스프라이트 로드 실패: " + e.getMessage());
             loaded = false;
         }
     }

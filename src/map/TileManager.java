@@ -67,7 +67,6 @@ public class TileManager {
                         // [김선욱님 코드] Box 객체를 GamePanel에 자동 등록 (중복 방지)
                         if (gamePanel != null && !gamePanel.boxExistsAt(screenX, screenY)) {
                             gamePanel.addBoxAt(screenX, screenY);
-                            System.out.println("📦 상자 등록됨: (" + screenX + ", " + screenY + ")");
                         }
                     }
                 }

@@ -522,6 +522,7 @@ public class Boss {
         return 0;
     }
     
+    // [서상원님 코드] 보스 돌진 수행 (AI 활용)
     private void performDash(double movement, int targetX, int targetY) {
         BossPosition pos = calculateBossPosition();
         double dx = targetX - pos.centerX;
@@ -546,6 +547,7 @@ public class Boss {
         return new BossPosition(centerX, centerY);
     }
     
+    // [서상원님 코드] 보스 돌진 방향 계산 (AI 활용)
     private void calculateAndSetDashDirection(int targetX, int targetY) {
         BossPosition pos = calculateBossPosition();
         double dx = targetX - pos.centerX;
@@ -586,6 +588,7 @@ public class Boss {
         }
     }
     
+    // [서상원님 코드] 보스 돌진 이동 적용 (AI 활용)
     private void applyDashMovement(int animState, int frameIndex, int targetX, int targetY) {
         if (dashCount == 0) return;
         
@@ -616,6 +619,7 @@ public class Boss {
         isDashingAngle = false;
     }
 
+    // [서상원님 코드] 보스 궁극기 투사체 생성 (AI 활용)
     private void createUltimateProjectiles(int targetX, int targetY) {
         if (currentState != ULTIMATE || !patternInProgress || projectileCreated) return;
         
@@ -634,6 +638,7 @@ public class Boss {
         projectileCreated = true;
     }
     
+    // [서상원님 코드] 보스 투사체 업데이트 (AI 활용)
     private void updateProjectiles() {
         projectiles.removeIf(p -> { p.update(); return !p.isActive(); });
     }
@@ -883,7 +888,7 @@ public class Boss {
     }
     
     
-    // [서상원님 코드] 보스 투사체 클래스
+    // [서상원님 코드] 보스 투사체 클래스 (AI 활용)
     public static class BossProjectile {
         private double x, y;
         private double dx, dy;

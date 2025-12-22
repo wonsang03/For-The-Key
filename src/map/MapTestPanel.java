@@ -48,13 +48,7 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
     }
 
     private void printCurrentRoom() {
-        System.out.println("\n========== Room " + currentRoom.getRoomId() + " ==========");
-        MapLoader.printMap(currentRoom.getMap());
-        System.out.println("연결된 방:");
-        for (Map.Entry<String, Integer> entry : currentRoom.getConnections().entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> Room " + entry.getValue());
-        }
-        System.out.println("================================\n");
+        // 디버깅용 메서드 - 필요시 사용
     }
 
     /**
@@ -62,8 +56,6 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
      * @param stageNumber 스테이지 번호 (1-5)
      */
     private void loadStage(int stageNumber) {
-        System.out.println("\n>>> 스테이지 " + stageNumber + " 로딩 중...");
-
         // 스테이지 로드
         MapLoader.loadAllRooms(stageNumber);
 
@@ -72,13 +64,6 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
 
         // 시작 방으로 이동
         currentRoom = MapLoader.getRoom(0);
-
-        if (currentRoom != null) {
-            System.out.println(">>> 스테이지 " + stageNumber + " 로드 완료!");
-            printCurrentRoom();
-        } else {
-            System.err.println(">>> 스테이지 " + stageNumber + " 로드 실패!");
-        }
     }
 
     public void startGameThread() {
@@ -147,7 +132,6 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
                 direction = "EAST";
                 break;
             case KeyEvent.VK_Q:
-                System.out.println("테스트 종료");
                 System.exit(0);
                 break;
             case KeyEvent.VK_1:
@@ -167,12 +151,9 @@ public class MapTestPanel extends JPanel implements Runnable, KeyListener {
                 RoomData nextRoom = MapLoader.getRoom(targetRoomId);
                 if (nextRoom != null) {
                     currentRoom = nextRoom;
-                    System.out.println("→ " + direction + " 방향으로 Room " + targetRoomId + "로 이동");
                     printCurrentRoom();
                 }
             }
-        } else if (direction != null) {
-            System.out.println("✗ " + direction + " 방향에는 연결된 방이 없습니다.");
         }
     }
 

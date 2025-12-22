@@ -102,17 +102,8 @@ public class TileSprites {
             // 상자 타일 (82번)
             chestTile = getTileByIndex(82);
 
-            System.out.println("✓ Stage " + stageNumber + " 타일 스프라이트 로드 완료 (204x204)");
-            System.out.println("  - 이미지: " + imagePath);
-            System.out.println("  - 모서리: 좌상(0), 우상(5), 좌하(40), 우하(45)");
-            System.out.println("  - 벽: 위(1-4), 아래(41-44), 좌(10,20,30), 우(15,25,35)");
-            System.out.println("  - 문: 위(36), 아래(37), 좌(48), 우(47)");
-            System.out.println("  - 바닥: 18번 고정");
-            System.out.println("  - 상자: 82번");
-
         } catch (IOException e) {
-            System.err.println("✗ 스프라이트 시트 로드 실패: " + e.getMessage());
-            e.printStackTrace();
+            // 스프라이트 로드 실패 시 조용히 처리
         }
     }
 

@@ -63,7 +63,6 @@ public class Player extends Entity {
     
     // 🔹 유령 망토 무적 시간 (5초 = 300프레임, 60 FPS 기준)
     private int ghostCloakTimer = 0;
-    private static final int GHOST_CLOAK_DURATION = 300; // 5초
 
     public Player(GamePanel gp, KeyHandler keyH) {
         this.gp = gp;
@@ -98,7 +97,6 @@ public class Player extends Entity {
             java.io.File file = new java.io.File("res/player.png");
             
             if (!file.exists()) {
-                System.err.println("경고: 플레이어 이미지 파일을 찾을 수 없습니다: " + file.getAbsolutePath());
                 animations = new BufferedImage[3][totalFrames];
                 return;
             }
@@ -106,7 +104,6 @@ public class Player extends Entity {
             BufferedImage spriteSheet = ImageIO.read(file);
             
             if (spriteSheet == null) {
-                System.err.println("경고: 플레이어 이미지를 읽을 수 없습니다.");
                 animations = new BufferedImage[3][totalFrames];
                 return;
             }
@@ -124,12 +121,8 @@ public class Player extends Entity {
             
             
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("이미지 로드 실패! res/player.png 파일을 확인하세요.");
             animations = new BufferedImage[3][totalFrames];
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("플레이어 이미지 로드 중 오류 발생: " + e.getMessage());
             animations = new BufferedImage[3][totalFrames];
         }
     }
@@ -140,7 +133,7 @@ public class Player extends Entity {
         if (obtainingItem) {
             obtainCounter++;
             // 🔹 무기 줍는 애니메이션 시간 증가 (기존 120 → 180, 약 3초)
-            if (obtainCounter > 180) { 
+            if (obtainCounter > Constants.ITEM_OBTAIN_ANIMATION_DURATION) { 
                 obtainingItem = false;
                 obtainCounter = 0;
             }
@@ -188,12 +181,12 @@ public class Player extends Entity {
             
             // [김민정님 코드] 발걸음 소리 재생 로직
             footstepCounter++; 
-            if (footstepCounter > 20) { // 약 0.3초마다 재생
+            if (footstepCounter > Constants.FOOTSTEP_INTERVAL) {
                 gp.soundManager.playSE(19);    // 19번: player_move.wav
                 footstepCounter = 0;    
             }
         } else {
-            footstepCounter = 20; 
+            footstepCounter = Constants.FOOTSTEP_INTERVAL; 
         }
 
         // [김민정님 코드] 애니메이션 로직
@@ -219,7 +212,7 @@ public class Player extends Entity {
             } else {
                 // 일반 피격 무적 (약 0.33초)
                 invincibleCounter++;
-                if (invincibleCounter > 20) { // 60프레임 = 약 1초
+                if (invincibleCounter > Constants.INVINCIBLE_DURATION) {
                     invincible = false;
                     invincibleCounter = 0;
                 }
@@ -379,7 +372,7 @@ public class Player extends Entity {
     public void activateGhostCloak() {
         // 🔹 유령 망토 무적 5초 활성화
         this.invincible = true;
-        this.ghostCloakTimer = GHOST_CLOAK_DURATION; // 5초 (300프레임)
+        this.ghostCloakTimer = Constants.GHOST_CLOAK_DURATION; // 5초 (300프레임)
         this.invincibleCounter = 0;
     }
     

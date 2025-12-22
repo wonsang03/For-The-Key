@@ -26,7 +26,6 @@ public class Key {
         try {
         	spriteSheet = ImageIO.read(new File("res/item/items.png"));
         } catch (IOException | IllegalArgumentException e) {
-            System.out.println("⚠️ Key 시트 로드 실패: " + e.getMessage());
             spriteSheet = null;
         }
     }
@@ -46,7 +45,6 @@ public class Key {
         try {
             image = spriteSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
         } catch (Exception e) {
-            System.out.println("⚠️ Key 이미지 잘라내기 실패: " + e.getMessage());
             image = null;
         }
     }

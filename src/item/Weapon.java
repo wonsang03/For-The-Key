@@ -48,7 +48,7 @@ public class Weapon {
                 }
             }
         } catch (Exception e) {
-            System.out.println("⚠️ items.png 로드 실패: " + e.getMessage());
+            // 이미지 로드 실패 시 조용히 처리
         }
     }
 
@@ -105,8 +105,6 @@ public class Weapon {
                     break;
             }
         } catch (Exception e) {
-            System.out.println("❌ 무기 이미지 로드 오류 (" + type + "): " + path);
-            e.printStackTrace();
             weaponImage = null; // 오류 시 null
         }
     }
@@ -129,7 +127,7 @@ public class Weapon {
                 try {
                     cursorFrames.add(ImageIO.read(file));
                 } catch (IOException e) {
-                    System.out.println("⚠️ 커서 프레임 로드 실패: " + path);
+                    // 커서 프레임 로드 실패 시 조용히 처리
                 }
             }
         }

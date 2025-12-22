@@ -5,7 +5,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -64,17 +63,18 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     // [김민정님 코드] UI 렌더러 및 게임 상태 관리
     public UIRenderer ui = new UIRenderer(this);
     public int gameState;
-    public final int titleState = 0;
-    public final int playState = 1;
-    public final int gameOverState = 2;
-    public final int loadingState = 3;
-    public final int gameClearState = 4; // 🔹 보스 처치 시 클리어 화면
+    
+    // 게임 상태 상수 (하위 호환성을 위해 유지, 실제 값은 Constants에서 가져옴)
+    public final int titleState = Constants.TITLE_STATE;
+    public final int playState = Constants.PLAY_STATE;
+    public final int gameOverState = Constants.GAME_OVER_STATE;
+    public final int loadingState = Constants.LOADING_STATE;
+    public final int gameClearState = Constants.GAME_CLEAR_STATE;
     
     // [로딩 화면] 로딩 관련 변수
     public long loadingStartTime = 0;
-    public final long STAGE_NAME_DURATION = 1500;
-    public final long FADE_IN_DURATION = 1000;
-    public final long TOTAL_LOADING_DURATION = STAGE_NAME_DURATION + FADE_IN_DURATION;
+    public final long STAGE_NAME_DURATION = Constants.STAGE_NAME_DURATION;
+    public final long FADE_IN_DURATION = Constants.FADE_IN_DURATION;
 
     // [김민정님 코드] 플레이어 및 KeyHandler
     public Player player;
@@ -104,11 +104,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private List<HitSpark> effects = new java.util.ArrayList<>();
     private boolean isWeaponAnimating = false;
     private ArrayList<Box> boxes = new ArrayList<>();
-    private ArrayList<int[]> boxSpawnPoints = new ArrayList<>();
     
     // 🔹 무기 교체 쿨다운 (밀리초)
     private long lastWeaponSwapTime = 0;
-    private static final long WEAPON_SWAP_COOLDOWN = 4500; // 4.5초 쿨다운 (애니메이션 3초 + 여유 1.5초)
     
     // 🔹 현재 재생 중인 BGM 인덱스 추적 (중복 재생 방지)
     private int currentMusicIndex = -1;
@@ -120,7 +118,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private java.util.Map<Integer, java.util.Map<Integer, java.util.Set<String>>> stageBoxes = new java.util.HashMap<>();
 
 
-    private boolean keyW, keyA, keyS, keyD, keyG, keyF;
     private map.Minimap minimap;
     
     // [김선욱님 코드] 마우스 입력 (총알 발사용)
@@ -131,7 +128,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     // [서상원님 코드] 카메라 시스템 (LERP 추적)
     public double cameraX = 0;
     public double cameraY = 0;
-    private final double CAMERA_LERP = 0.05;
     
     // [서상원님 코드] 적 스폰 시스템 (맵 기반)
     private ArrayList<int[]> enemySpawnPoints = new ArrayList<>();
@@ -209,8 +205,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
         // [김민정님 코드] 플레이어 초기화
         player = new Player(this, keyH);
-        player.x = Constants.TILE_SIZE * 10;
-        player.y = Constants.TILE_SIZE * 6;
+        player.x = Constants.TILE_SIZE * Constants.PLAYER_START_X;
+        player.y = Constants.TILE_SIZE * Constants.PLAYER_START_Y;
 
         // 🔫 플레이어 인벤토리의 현재 무기와 GamePanel의 currentWeapon 동기화
         syncCurrentWeaponFromPlayer();
@@ -225,7 +221,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         keys.clear();
 
         // [김민정님 코드] 게임 시작 시 타이틀 화면 상태로 설정
-        gameState = titleState;
+        gameState = Constants.TITLE_STATE;
         soundManager.playMusic(29); // [김민정님 코드] 타이틀 화면 BGM 재생
         
         startGameThread();
@@ -253,8 +249,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         
         // 플레이어 스탯 초기화
         player = new Player(this, keyH);
-        player.x = Constants.TILE_SIZE * 10;
-        player.y = Constants.TILE_SIZE * 6;
+        player.x = Constants.TILE_SIZE * Constants.PLAYER_START_X;
+        player.y = Constants.TILE_SIZE * Constants.PLAYER_START_Y;
         
         // 카메라 초기화
         cameraX = player.x - Constants.WINDOW_WIDTH / 2.0;
@@ -307,17 +303,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
     public void update() {
         // [로딩 화면] 로딩 상태 처리
-        if (gameState == loadingState) {
+        if (gameState == Constants.LOADING_STATE) {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - loadingStartTime >= TOTAL_LOADING_DURATION) {
+            if (currentTime - loadingStartTime >= Constants.TOTAL_LOADING_DURATION) {
                 spawnEnemiesAfterLoading();
-                gameState = playState;
+                gameState = Constants.PLAY_STATE;
             }
             return;
         }
         
         // [김민정님 코드] 플레이 상태가 아니면(타이틀, 게임오버 등) 게임 로직 멈춤
-        if (gameState != playState) {
+        if (gameState != Constants.PLAY_STATE) {
             return;
         }
 
@@ -381,10 +377,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         }
 
         // [서상원님 코드] 카메라 추적 (LERP)
-        double targetCameraX = playerX - Constants.WINDOW_WIDTH / 2.0;
-        double targetCameraY = playerY - Constants.WINDOW_HEIGHT / 2.0;
-        cameraX += (targetCameraX - cameraX) * CAMERA_LERP;
-        cameraY += (targetCameraY - cameraY) * CAMERA_LERP;
+        updateCamera(playerX, playerY);
         
         // [서상원님 코드] 적 업데이트 (플레이어 추적)
         for (Enemy enemy : enemies) {
@@ -450,14 +443,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                                             activeDrops[(int)(Math.random() * activeDrops.length)];
 
                                         items.add(new Item(enemy.x, enemy.y, dropActive));
-
-                                        System.out.println("🎁 정예몹 액티브 아이템 드롭: " + dropActive.getName());
                                     }
                                 
                                 }
                                 else {
                                     // 🔹 일반몹: 80% 확률로 기본 3종 드롭, 20%는 드롭 없음
-                                    if (Math.random() < 0.8) {
+                                    if (Math.random() < Constants.COMMON_ENEMY_DROP_RATE) {
                                         ItemType[] commonDrops = {
                                             ItemType.POWER_FRUIT,
                                             ItemType.LIFE_SEED,
@@ -528,24 +519,106 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         });
         
         // [김민정님 코드] 플레이어 사망 체크 (HP가 0 이하면 게임오버)
+        checkPlayerDeath();
+        
+        // [수정] 보스 업데이트 (소리는 Boss 클래스 내부에서 재생)
+        updateBoss(playerX, playerY);
+        
+        // 🔹 보스 처치 체크 (보스가 죽으면 클리어 화면)
+        checkBossDefeat();
+    }
+    
+    // 카메라 업데이트
+    private void updateCamera(double playerX, double playerY) {
+        double targetCameraX = playerX - Constants.WINDOW_WIDTH / 2.0;
+        double targetCameraY = playerY - Constants.WINDOW_HEIGHT / 2.0;
+        cameraX += (targetCameraX - cameraX) * Constants.CAMERA_LERP;
+        cameraY += (targetCameraY - cameraY) * Constants.CAMERA_LERP;
+    }
+    
+    // 플레이어 사망 체크
+    private void checkPlayerDeath() {
         if (player.getHP() <= 0) {
-            gameState = gameOverState;
+            gameState = Constants.GAME_OVER_STATE;
             soundManager.stop();     // [김민정님 코드] 배경음악 정지
             soundManager.playSE(21); // [김민정님 코드] 플레이어 사망(게임오버) 효과음
         }
-        
-        // [수정] 보스 업데이트 (소리는 Boss 클래스 내부에서 재생)
+    }
+    
+    // 보스 업데이트
+    private void updateBoss(double playerX, double playerY) {
         if (boss != null && boss.alive) {
             boss.update((int)playerX, (int)playerY);
         }
-        
-        // 🔹 보스 처치 체크 (보스가 죽으면 클리어 화면)
+    }
+    
+    // 보스 처치 체크
+    private void checkBossDefeat() {
         if (boss != null && !boss.alive) {
-            gameState = gameClearState;
+            gameState = Constants.GAME_CLEAR_STATE;
             soundManager.stop();
             soundManager.playSE(11); // 클리어 효과음 (stageclear.wav)
         }
     }
+    
+    // 방의 상자 찾기 및 복원 (중복 코드 제거)
+    private void loadBoxesForRoom(RoomData room) {
+        boxes.clear();
+        if (room == null) return;
+        
+        int currentStage = MapLoader.getCurrentStage();
+        int roomId = room.getRoomId();
+        java.util.Map<Integer, java.util.Set<String>> stageBoxMap = stageBoxes.getOrDefault(currentStage, new java.util.HashMap<>());
+        java.util.Set<String> openedBoxKeys = stageBoxMap.getOrDefault(roomId, new java.util.HashSet<>());
+        
+        char[][] map = room.getMap();
+        if (map == null) return;
+        
+        for (int y = 0; y < map.length; y++) {
+            for (int x = 0; x < map[y].length; x++) {
+                if (map[y][x] == 'C') {
+                    int boxX = x * Constants.TILE_SIZE;
+                    int boxY = y * Constants.TILE_SIZE;
+                    String boxKey = boxX + "," + boxY;
+                    
+                    Box box = new Box(boxX, boxY);
+                    if (openedBoxKeys.contains(boxKey)) {
+                        box.open();
+                    }
+                    boxes.add(box);
+                }
+            }
+        }
+    }
+    
+    // 방 이동 시 플레이어 위치 설정 (중복 코드 제거)
+    private void setPlayerPositionForDirection(String direction, RoomData room) {
+        if (room == null) return;
+        
+        char[][] nextMap = room.getMap();
+        int nextMapWidth = nextMap[0].length;
+        int nextMapHeight = nextMap.length;
+        
+        switch (direction) {
+            case "NORTH":
+                player.x = (nextMapWidth / 2) * Constants.TILE_SIZE;
+                player.y = (nextMapHeight - 2) * Constants.TILE_SIZE;
+                break;
+            case "SOUTH":
+                player.x = (nextMapWidth / 2) * Constants.TILE_SIZE;
+                player.y = 2 * Constants.TILE_SIZE;
+                break;
+            case "WEST":
+                player.x = (nextMapWidth - 2) * Constants.TILE_SIZE;
+                player.y = (nextMapHeight / 2) * Constants.TILE_SIZE;
+                break;
+            case "EAST":
+                player.x = 2 * Constants.TILE_SIZE;
+                player.y = (nextMapHeight / 2) * Constants.TILE_SIZE;
+                break;
+        }
+    }
+    
     
     // [서충만님 코드] 문 충돌 체크 및 방 이동: 플레이어가 문 타일('D')에 닿으면 연결된 방으로 이동
     private void checkDoorCollision(int tileX, int tileY, char[][] map) {
@@ -606,28 +679,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 if (nextRoom != null) {
                     currentRoom = nextRoom;
                     
-                    char[][] nextMap = nextRoom.getMap();
-                    int nextMapWidth = nextMap[0].length;
-                    int nextMapHeight = nextMap.length;
-                    
-                    switch (direction) {
-                        case "NORTH":
-                            player.x = (nextMapWidth / 2) * Constants.TILE_SIZE;
-                            player.y = (nextMapHeight - 2) * Constants.TILE_SIZE;
-                            break;
-                        case "SOUTH":
-                            player.x = (nextMapWidth / 2) * Constants.TILE_SIZE;
-                            player.y = 2 * Constants.TILE_SIZE;
-                            break;
-                        case "WEST":
-                            player.x = (nextMapWidth - 2) * Constants.TILE_SIZE;
-                            player.y = (nextMapHeight / 2) * Constants.TILE_SIZE;
-                            break;
-                        case "EAST":
-                            player.x = 2 * Constants.TILE_SIZE;
-                            player.y = (nextMapHeight / 2) * Constants.TILE_SIZE;
-                            break;
-                    }
+                    // 플레이어 위치 설정
+                    setPlayerPositionForDirection(direction, nextRoom);
                     
                     // [수정] 방 이동 시 현재 방의 아이템만 표시
                     int nextRoomId = nextRoom.getRoomId();
@@ -637,37 +690,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                     }
                     
                     // 🔹 새 방의 상자 찾기 (스테이지별 방별 열림 상태 복원)
-                    boxes.clear();
-                    if (currentRoom != null) {
-                        int currentStage = MapLoader.getCurrentStage();
-                        int currentRoomId = nextRoom.getRoomId();
-                        java.util.Map<Integer, java.util.Set<String>> stageBoxMap = stageBoxes.getOrDefault(currentStage, new java.util.HashMap<>());
-                        java.util.Set<String> openedBoxKeys = stageBoxMap.getOrDefault(currentRoomId, new java.util.HashSet<>());
-                        
-                        char[][] roomMap = currentRoom.getMap();
-                        if (roomMap != null) {
-                            for (int y = 0; y < roomMap.length; y++) {
-                                for (int x = 0; x < roomMap[y].length; x++) {
-                                    if (roomMap[y][x] == 'C') {
-                                        int boxX = x * Constants.TILE_SIZE;
-                                        int boxY = y * Constants.TILE_SIZE;
-                                        String boxKey = boxX + "," + boxY;
-                                        
-                                        Box box = new Box(boxX, boxY);
-                                        // 이미 열린 상자는 열린 상태로 복원
-                                        if (openedBoxKeys.contains(boxKey)) {
-                                            box.open();
-                                        }
-                                        boxes.add(box);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    loadBoxesForRoom(nextRoom);
                     
                     // [서상원님 코드] 새 방으로 이동 시 적 스폰 포인트 찾기 및 스폰
-                    findEnemySpawnPoints();
-                    spawnEnemiesFromMap();
+                    spawnEnemiesForRoom();
                     // 🔹 방 이동 시에는 BGM 재생하지 않음 (같은 스테이지 내 이동)
                     soundManager.playSE(18); // [김민정님 코드] 문 열리는 소리
                 }
@@ -679,7 +705,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     private ArrayList<int[]> eliteSpawnPoints = new ArrayList<>();
     private ArrayList<int[]> bossSpawnPoints = new ArrayList<>();
     
-    private void findEnemySpawnPoints() {
+    // 적 스폰 포인트 찾기 및 스폰 (통합 메서드)
+    private void spawnEnemiesForRoom() {
         enemySpawnPoints.clear();
         eliteSpawnPoints.clear();
         bossSpawnPoints.clear();
@@ -690,15 +717,18 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         
         for (int y = 0; y < map.length; y++) {
             for (int x = 0; x < map[y].length; x++) {
-                if (map[y][x] == 'E') {
+                char tile = map[y][x];
+                if (tile == Constants.ENEMY_SPAWN_TILE) {
                     enemySpawnPoints.add(new int[]{x, y});
-                } else if (map[y][x] == 'L') {
+                } else if (tile == Constants.ELITE_SPAWN_TILE) {
                     eliteSpawnPoints.add(new int[]{x, y});
-                } else if (map[y][x] == 'B') {
+                } else if (tile == Constants.BOSS_SPAWN_TILE) {
                     bossSpawnPoints.add(new int[]{x, y});
                 }
             }
         }
+        
+        spawnEnemiesFromMap();
     }
     
     // [서상원님 코드] 스테이지별 일반 적 타입 랜덤 선택
@@ -862,7 +892,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
                     double roll = Math.random(); // 0~1 사이 난수
 
-                    if (roll < 0.5) {
+                    if (roll < Constants.BOX_WEAPON_DROP_RATE) {
                         // 🗡 무기 드롭 (50%)
                         WeaponType[] weaponPool = {
                             WeaponType.PISTOL,
@@ -912,38 +942,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     // [로딩 화면] 로딩 완료 후 몹 소환
     private void spawnEnemiesAfterLoading() {
         // [서상원님 코드] 현재 방의 적 스폰 포인트 찾기 및 스폰
-        findEnemySpawnPoints();
-        spawnEnemiesFromMap();
+        spawnEnemiesForRoom();
         boss = null;
         
         // 🔹 상자 초기화 및 새 방의 상자 찾기 (스테이지별 방별 열림 상태 복원)
-        boxes.clear();
-        if (currentRoom != null) {
-            int currentStage = MapLoader.getCurrentStage();
-            int currentRoomId = currentRoom.getRoomId();
-            java.util.Map<Integer, java.util.Set<String>> stageBoxMap = stageBoxes.getOrDefault(currentStage, new java.util.HashMap<>());
-            java.util.Set<String> openedBoxKeys = stageBoxMap.getOrDefault(currentRoomId, new java.util.HashSet<>());
-            
-            char[][] map = currentRoom.getMap();
-            if (map != null) {
-                for (int y = 0; y < map.length; y++) {
-                    for (int x = 0; x < map[y].length; x++) {
-                        if (map[y][x] == 'C') {
-                            int boxX = x * Constants.TILE_SIZE;
-                            int boxY = y * Constants.TILE_SIZE;
-                            String boxKey = boxX + "," + boxY;
-                            
-                            Box box = new Box(boxX, boxY);
-                            // 이미 열린 상자는 열린 상태로 복원
-                            if (openedBoxKeys.contains(boxKey)) {
-                                box.open();
-                            }
-                            boxes.add(box);
-                        }
-                    }
-                }
-            }
-        }
+        loadBoxesForRoom(currentRoom);
         
         // [수정] 현재 방의 아이템 로드
         if (currentRoom != null) {
@@ -958,32 +961,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         playStageMusic();
     }
     
-    // [서충만님 코드] 맵 경계 테두리 그리기: 맵 경계를 초록색 선과 모서리 사각형으로 표시
-    private void drawMapBorder(Graphics2D g2, char[][] map) {
-        if (map == null) return;
-        
-        int mapWidth = map[0].length;
-        int mapHeight = map.length;
-        int tileSize = Constants.TILE_SIZE;
-        
-        g2.setColor(Color.GREEN);
-        g2.setStroke(new java.awt.BasicStroke(3.0f));
-        
-        int mapPixelWidth = mapWidth * tileSize;
-        int mapPixelHeight = mapHeight * tileSize;
-        
-        g2.drawRect(0, 0, mapPixelWidth, mapPixelHeight);
-        
-        int cornerSize = 20;
-        g2.fillRect(0, 0, cornerSize, cornerSize);
-        g2.fillRect(mapPixelWidth - cornerSize, 0, cornerSize, cornerSize);
-        g2.fillRect(0, mapPixelHeight - cornerSize, cornerSize, cornerSize);
-        g2.fillRect(mapPixelWidth - cornerSize, mapPixelHeight - cornerSize, cornerSize, cornerSize);
-    }
-    
     // [김선욱님 코드] 총알/근접 공격 발사 처리
     private void shoot() {
-        if (gameState != playState) return; // [김민정님 코드] 플레이 중이 아니면 발사 불가
+        if (gameState != Constants.PLAY_STATE) return; // [김민정님 코드] 플레이 중이 아니면 발사 불가
 
         // ✅ 항상 Player 인벤토리 기준으로 현재 무기 타입을 먼저 동기화
         if (player == null || player.getCurrentWeapon() == null) return;
@@ -1185,7 +1165,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         double playerX = player.x;
         double playerY = player.y;
         // 🔹 아이템 습득 범위 축소 (기존 TILE_SIZE의 70%로 축소)
-        int pickupRange = (int)(Constants.TILE_SIZE * 0.7);
+        int pickupRange = (int)(Constants.TILE_SIZE * Constants.ITEM_PICKUP_RANGE_RATIO);
         Rectangle playerRect = new Rectangle(
                 (int) playerX - pickupRange / 2,
                 (int) playerY - pickupRange / 2,
@@ -1323,7 +1303,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
         // 🔹 무기 교체 쿨다운 체크
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastWeaponSwapTime < WEAPON_SWAP_COOLDOWN) {
+        if (currentTime - lastWeaponSwapTime < Constants.WEAPON_SWAP_COOLDOWN) {
             // 쿨다운 중이면 교체 불가
             return false;
         }
@@ -1477,14 +1457,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
         // 5탄 이후 엔딩 처리
         if (nextStage > map.StageInfo.MAX_STAGE) {
-            gameState = titleState; 
+            gameState = Constants.TITLE_STATE; 
             soundManager.stop();
             soundManager.playMusic(29); 
             return;
         }
 
         // 로딩 화면 시작
-        gameState = loadingState;
+        gameState = Constants.LOADING_STATE;
         loadingStartTime = System.currentTimeMillis();
 
         // 맵 데이터 불러오기
@@ -1499,8 +1479,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         roomItems.clear();
 
         // 플레이어 위치 초기화 (setupGame과 동일한 위치)
-        player.x = Constants.TILE_SIZE * 10;
-        player.y = Constants.TILE_SIZE * 6;
+        player.x = Constants.TILE_SIZE * Constants.PLAYER_START_X;
+        player.y = Constants.TILE_SIZE * Constants.PLAYER_START_Y;
         
         // 중요: 다음 판으로 가면 열쇠와 적들을 초기화
         player.currentKeyCount = 0; 
@@ -1512,31 +1492,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         boxes.clear(); // 상자도 초기화
         
         // 🔹 새 스테이지의 첫 방 상자 스폰 (스테이지별 방별 열림 상태 복원)
-        if (currentRoom != null) {
-            int currentRoomId = currentRoom.getRoomId();
-            java.util.Map<Integer, java.util.Set<String>> stageBoxMap = stageBoxes.getOrDefault(nextStage, new java.util.HashMap<>());
-            java.util.Set<String> openedBoxKeys = stageBoxMap.getOrDefault(currentRoomId, new java.util.HashSet<>());
-            
-            char[][] map = currentRoom.getMap();
-            if (map != null) {
-                for (int y = 0; y < map.length; y++) {
-                    for (int x = 0; x < map[y].length; x++) {
-                        if (map[y][x] == 'C') {
-                            int boxX = x * Constants.TILE_SIZE;
-                            int boxY = y * Constants.TILE_SIZE;
-                            String boxKey = boxX + "," + boxY;
-                            
-                            Box box = new Box(boxX, boxY);
-                            // 이미 열린 상자는 열린 상태로 복원
-                            if (openedBoxKeys.contains(boxKey)) {
-                                box.open();
-                            }
-                            boxes.add(box);
-                        }
-                    }
-                }
-            }
-        }
+        loadBoxesForRoom(currentRoom);
         
         // 이전 스테이지 BGM 정지 (로딩 화면 끝난 후 playStageMusic()에서 재생)
         soundManager.stop();
@@ -1611,7 +1567,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
         // 🔹 무기 교체 쿨다운 체크
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastWeaponSwapTime < WEAPON_SWAP_COOLDOWN) {
+        if (currentTime - lastWeaponSwapTime < Constants.WEAPON_SWAP_COOLDOWN) {
             // 쿨다운 중이면 교체 불가
             return;
         }
@@ -1649,13 +1605,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
         Graphics2D g2 = (Graphics2D) g;
         
         // [김민정님 코드] 타이틀 화면이면 UI만 그리고 리턴
-        if (gameState == titleState) {
+        if (gameState == Constants.TITLE_STATE) {
             ui.draw(g2);
             return;
         }
         
         // [김민정님 코드] 로딩 화면이면 UI만 그리고 리턴
-        if (gameState == loadingState) {
+        if (gameState == Constants.LOADING_STATE) {
             ui.draw(g2);
             return;
         }
@@ -1768,31 +1724,22 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
     // [서상원님 코드] 키보드 입력 처리
     @Override
     public void keyTyped(KeyEvent e) {
-        int code = e.getKeyCode();
-        if (code == KeyEvent.VK_G) keyG = true;
-        if (code == KeyEvent.VK_F) keyF = true;
+        // 키 입력 처리 (필요시 구현)
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
         
-        if (gameState == titleState) {
+        if (gameState == Constants.TITLE_STATE) {
             if (code == KeyEvent.VK_ENTER) {
-                gameState = loadingState;
+                gameState = Constants.LOADING_STATE;
                 loadingStartTime = System.currentTimeMillis();
                 soundManager.stop();      // [김민정님 코드] 타이틀 음악 정지
                 playStageMusic();         // [김민정님 코드] 스테이지 배경음 시작
             }
         }
-        else if (gameState == playState) {
-            if (code == KeyEvent.VK_W) keyW = true;
-            if (code == KeyEvent.VK_S) keyS = true;
-            if (code == KeyEvent.VK_A) keyA = true;
-            if (code == KeyEvent.VK_D) keyD = true;
-            if (code == KeyEvent.VK_G) keyG = true;
-            if (code == KeyEvent.VK_F) keyF = true;
-            
+        else if (gameState == Constants.PLAY_STATE) {
             if (code == KeyEvent.VK_1) {
                 if (player != null) {
                     player.selectedItemIndex = 0;
@@ -1836,19 +1783,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
                 changeWeapon(true);
             }
             
-            if (code == KeyEvent.VK_P) gameState = gameOverState;
+            if (code == KeyEvent.VK_P) gameState = Constants.GAME_OVER_STATE;
         }
-        else if (gameState == gameOverState) {
+        else if (gameState == Constants.GAME_OVER_STATE) {
             if (code == KeyEvent.VK_R) {
                 resetGameOnDeath();
-                gameState = playState;
+                gameState = Constants.PLAY_STATE;
             }
         }
-        else if (gameState == gameClearState) {
+        else if (gameState == Constants.GAME_CLEAR_STATE) {
             if (code == KeyEvent.VK_R) {
                 // 타이틀 화면으로 이동 및 사운드 초기화
                 soundManager.stop(); // 모든 사운드 정지
-                gameState = titleState; // 타이틀 화면으로
+                gameState = Constants.TITLE_STATE; // 타이틀 화면으로
                 soundManager.playMusic(29); // 타이틀 BGM 재생
             }
         }
@@ -1856,15 +1803,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseMot
 
     @Override
     public void keyReleased(KeyEvent e) {
-        int code = e.getKeyCode();
-        
-        // [서상원님 코드] WASD 키 해제
-        if (code == KeyEvent.VK_W) keyW = false;
-        if (code == KeyEvent.VK_S) keyS = false;
-        if (code == KeyEvent.VK_A) keyA = false;
-        if (code == KeyEvent.VK_D) keyD = false;
-        if (code == KeyEvent.VK_G) keyG = false;
-        if (code == KeyEvent.VK_F) keyF = false;
+        // 키 해제 처리 (필요시 구현)
     }
     
     // [김선욱님 코드] 마우스 위치 추적

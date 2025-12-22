@@ -15,8 +15,6 @@ import javax.swing.JFrame;
 public class MapTestMain {
 
     public static void main(String[] args) {
-        System.out.println("=== Map Test Started ===");
-
         JFrame frame = new JFrame(Constants.GAME_TITLE + " - Map Test");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);

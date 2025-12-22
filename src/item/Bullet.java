@@ -43,7 +43,6 @@ public class Bullet {
         try {
             spriteSheet = ImageIO.read(new File("res/item/items.png"));
         } catch (IOException | IllegalArgumentException e) {
-            System.out.println("⚠️ bullets 시트 로드 실패: " + e.getMessage());
             spriteSheet = null;
         }
     }
@@ -87,7 +86,6 @@ public class Bullet {
             try {
                 image = spriteSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
             } catch (Exception e) {
-                System.out.println("⚠️ 탄환 이미지 잘라내기 실패 (" + type + "): " + e.getMessage());
                 image = null;
             }
         } else {

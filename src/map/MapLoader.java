@@ -35,7 +35,6 @@ public class MapLoader {
                 file = new java.io.File("bin/map/data/stage" + stageNumber + ".txt");
             }
             if (!file.exists()) {
-                System.err.println("stage" + stageNumber + ".txt 파일을 찾을 수 없습니다. 경로: " + file.getAbsolutePath());
                 return;
             }
 
@@ -93,11 +92,9 @@ public class MapLoader {
                     saveRoom(currentRoomId, mapLines, connections, currentRoomType);
                 }
 
-                System.out.println("총 " + roomCache.size() + "개의 방이 로드되었습니다.");
             }
         } catch (Exception e) {
-            System.err.println("맵 로드 오류: " + e.getMessage());
-            e.printStackTrace();
+            // 맵 로드 실패 시 조용히 처리
         }
     }
 
@@ -106,7 +103,6 @@ public class MapLoader {
      */
     private static void saveRoom(int roomId, List<String> mapLines, List<String[]> connections, String roomType) {
         if (mapLines.isEmpty()) {
-            System.err.println("Room " + roomId + ": 맵 데이터가 없습니다.");
             return;
         }
 
@@ -142,8 +138,6 @@ public class MapLoader {
         }
 
         roomCache.put(roomId, roomData);
-
-        System.out.println("  Room " + roomId + " 로드됨: " + width + "x" + height);
     }
 
     /**
@@ -171,11 +165,6 @@ public class MapLoader {
      * 맵을 콘솔에 출력 (디버깅용)
      */
     public static void printMap(char[][] map) {
-        for (int y = 0; y < map.length; y++) {
-            for (int x = 0; x < map[y].length; x++) {
-                System.out.print(map[y][x]);
-            }
-            System.out.println();
-        }
+        // 디버깅용 메서드 - 필요시 사용
     }
 }

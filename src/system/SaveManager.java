@@ -4,10 +4,10 @@ package system;
 public class SaveManager {
     
     public void save() {
-        System.out.println("게임이 저장되었습니다.");
+        // 게임 저장 기능 (구현 예정)
     }
     
     public void load() {
-        System.out.println("게임을 불러왔습니다.");
+        // 게임 불러오기 기능 (구현 예정)
     }
 }

@@ -66,7 +66,6 @@ public class SoundManager {
             clip = AudioSystem.getClip();
             clip.open(ais);
         } catch (Exception e) {
-            System.out.println("사운드 파일 로드 실패 (인덱스 " + i + "): " + e.getMessage());
             clip = null;
         }
     }
@@ -76,7 +75,7 @@ public class SoundManager {
             try {
                 clip.start();
             } catch (Exception e) {
-                System.out.println("사운드 재생 실패: " + e.getMessage());
+                // 사운드 재생 실패 시 조용히 처리
             }
         }
     }
@@ -86,7 +85,7 @@ public class SoundManager {
             try {
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
             } catch (Exception e) {
-                System.out.println("사운드 반복 재생 실패: " + e.getMessage());
+                // 사운드 반복 재생 실패 시 조용히 처리
             }
         }
     }
@@ -106,7 +105,7 @@ public class SoundManager {
                 loop();
             }
         } catch (Exception e) {
-            System.out.println("배경음악 재생 실패 (인덱스 " + i + "): " + e.getMessage());
+            // 배경음악 재생 실패 시 조용히 처리
         }
     }
     
@@ -117,7 +116,7 @@ public class SoundManager {
                 play();
             }
         } catch (Exception e) {
-            System.out.println("효과음 재생 실패 (인덱스 " + i + "): " + e.getMessage());
+            // 효과음 재생 실패 시 조용히 처리
         }
     }
     
@@ -129,7 +128,7 @@ public class SoundManager {
                 weaponClip.open(ais);
                 weaponClip.start();
             } catch (Exception e) {
-                e.printStackTrace();
+                // 무기 사운드 재생 실패 시 조용히 처리
             }
         }
     }
@@ -142,7 +141,7 @@ public class SoundManager {
                 enemyClip.open(ais);
                 enemyClip.start();
             } catch (Exception e) {
-                e.printStackTrace();
+                // 적 사운드 재생 실패 시 조용히 처리
             }
         }
     }

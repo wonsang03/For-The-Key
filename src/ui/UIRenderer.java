@@ -69,7 +69,7 @@ public class UIRenderer {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            // 이미지 로드 실패 시 조용히 처리
         }
     }
     

@@ -106,7 +106,6 @@ public enum WeaponType {
             }
             image = itemSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
         } catch (IOException e) {
-            System.out.println("⚠️ 무기 이미지 로드 실패: " + name + " - " + e.getMessage());
             image = null;
         }
         return image;
@@ -146,7 +145,7 @@ public enum WeaponType {
                 File f = new File(path);
                 if (f.exists()) cursorFrames.add(ImageIO.read(f));
             } catch (IOException e) {
-                System.out.println("⚠️ 커서 프레임 로드 실패: " + path);
+                // 커서 프레임 로드 실패 시 조용히 처리
             }
         }
     }
