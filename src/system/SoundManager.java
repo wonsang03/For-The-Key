@@ -1,6 +1,5 @@
 package system;
 
-import java.io.File;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -8,61 +7,67 @@ import javax.sound.sampled.Clip;
 public class SoundManager {
 
     Clip clip;
-    File soundFiles[] = new File[40];
+    String soundPaths[] = new String[40];
 
     public SoundManager() {
         // 무기 사운드 (0 ~ 5)
-        soundFiles[0] = new File("res/sounds/dagger_swing.wav");
-        soundFiles[1] = new File("res/sounds/longsword.wav");
-        soundFiles[2] = new File("res/sounds/greatsword.wav");
-        soundFiles[3] = new File("res/sounds/pistol_shot.wav");
-        soundFiles[4] = new File("res/sounds/shotgun.wav");
-        soundFiles[5] = new File("res/sounds/sniper.wav");
+        soundPaths[0] = "/res/sounds/dagger_swing.wav";
+        soundPaths[1] = "/res/sounds/longsword.wav";
+        soundPaths[2] = "/res/sounds/greatsword.wav";
+        soundPaths[3] = "/res/sounds/pistol_shot.wav";
+        soundPaths[4] = "/res/sounds/shotgun.wav";
+        soundPaths[5] = "/res/sounds/sniper.wav";
 
         // 스테이지/BGM (6 ~ 11)
-        soundFiles[6] = new File("res/sounds/bgm_forest.wav");
-        soundFiles[7] = new File("res/sounds/bgm_swamp.wav");
-        soundFiles[8] = new File("res/sounds/bgm_ice.wav");
-        soundFiles[9] = new File("res/sounds/bgm_hell.wav");
-        soundFiles[10] = new File("res/sounds/bgm_throne.wav");
-        soundFiles[11] = new File("res/sounds/stageclear.wav");
+        soundPaths[6] = "/res/sounds/bgm_forest.wav";
+        soundPaths[7] = "/res/sounds/bgm_swamp.wav";
+        soundPaths[8] = "/res/sounds/bgm_ice.wav";
+        soundPaths[9] = "/res/sounds/bgm_hell.wav";
+        soundPaths[10] = "/res/sounds/bgm_throne.wav";
+        soundPaths[11] = "/res/sounds/stageclear.wav";
 
         // 아이템 (12 ~ 17)
-        soundFiles[12] = new File("res/sounds/key_get.wav");
-        soundFiles[13] = new File("res/sounds/key_drop.wav");
-        soundFiles[14] = new File("res/sounds/key_use.wav");
-        soundFiles[15] = new File("res/sounds/item_get.wav");
-        soundFiles[16] = new File("res/sounds/item_use.wav");
-        soundFiles[17] = new File("res/sounds/chest_open.wav");
+        soundPaths[12] = "/res/sounds/key_get.wav";
+        soundPaths[13] = "/res/sounds/key_drop.wav";
+        soundPaths[14] = "/res/sounds/key_use.wav";
+        soundPaths[15] = "/res/sounds/item_get.wav";
+        soundPaths[16] = "/res/sounds/item_use.wav";
+        soundPaths[17] = "/res/sounds/chest_open.wav";
 
         // 방 (18)
-        soundFiles[18] = new File("res/sounds/door_open.wav");
+        soundPaths[18] = "/res/sounds/door_open.wav";
 
         // 플레이어 (19 ~ 21)
-        soundFiles[19] = new File("res/sounds/player_move.wav");
-        soundFiles[20] = new File("res/sounds/player_hit.wav");
-        soundFiles[21] = new File("res/sounds/player_die.wav");
+        soundPaths[19] = "/res/sounds/player_move.wav";
+        soundPaths[20] = "/res/sounds/player_hit.wav";
+        soundPaths[21] = "/res/sounds/player_die.wav";
 
         // 적/몬스터 (22 ~ 28)
-        soundFiles[22] = new File("res/sounds/enemy_swing1.wav");
-        soundFiles[23] = new File("res/sounds/enemy_swing2.wav");
-        soundFiles[24] = new File("res/sounds/enemy_throw.wav");
-        soundFiles[25] = new File("res/sounds/slimewalk.wav");
-        soundFiles[26] = new File("res/sounds/bite.wav");
-        soundFiles[27] = new File("res/sounds/ice_shatter.wav");
-        soundFiles[28] = new File("res/sounds/enemy_die.wav");
-        
+        soundPaths[22] = "/res/sounds/enemy_swing1.wav";
+        soundPaths[23] = "/res/sounds/enemy_swing2.wav";
+        soundPaths[24] = "/res/sounds/enemy_throw.wav";
+        soundPaths[25] = "/res/sounds/slimewalk.wav";
+        soundPaths[26] = "/res/sounds/bite.wav";
+        soundPaths[27] = "/res/sounds/ice_shatter.wav";
+        soundPaths[28] = "/res/sounds/enemy_die.wav";
+
         // 추가 (29 ~ )
-        soundFiles[29] = new File("res/sounds/bgm_title.wav");
+        soundPaths[29] = "/res/sounds/bgm_title.wav";
     }
 
     public void setFile(int i) {
         try {
-            if (i < 0 || i >= soundFiles.length || soundFiles[i] == null || !soundFiles[i].exists()) {
+            if (i < 0 || i >= soundPaths.length || soundPaths[i] == null) {
                 clip = null;
                 return;
             }
-            AudioInputStream ais = AudioSystem.getAudioInputStream(soundFiles[i]);
+            java.io.InputStream is = getClass().getResourceAsStream(soundPaths[i]);
+            if (is == null) {
+                clip = null;
+                return;
+            }
+            java.io.BufferedInputStream bis = new java.io.BufferedInputStream(is);
+            AudioInputStream ais = AudioSystem.getAudioInputStream(bis);
             clip = AudioSystem.getClip();
             clip.open(ais);
         } catch (Exception e) {
@@ -121,9 +126,12 @@ public class SoundManager {
     }
     
     public void playWeaponSound(int soundIndex) {
-        if (soundIndex >= 0 && soundIndex < soundFiles.length && soundFiles[soundIndex] != null && soundFiles[soundIndex].exists()) {
+        if (soundIndex >= 0 && soundIndex < soundPaths.length && soundPaths[soundIndex] != null) {
             try {
-                AudioInputStream ais = AudioSystem.getAudioInputStream(soundFiles[soundIndex]);
+                java.io.InputStream is = getClass().getResourceAsStream(soundPaths[soundIndex]);
+                if (is == null) return;
+                java.io.BufferedInputStream bis = new java.io.BufferedInputStream(is);
+                AudioInputStream ais = AudioSystem.getAudioInputStream(bis);
                 Clip weaponClip = AudioSystem.getClip();
                 weaponClip.open(ais);
                 weaponClip.start();
@@ -134,9 +142,12 @@ public class SoundManager {
     }
     
     public void playEnemySound(int soundIndex) {
-        if (soundIndex >= 0 && soundIndex < soundFiles.length && soundFiles[soundIndex] != null && soundFiles[soundIndex].exists()) {
+        if (soundIndex >= 0 && soundIndex < soundPaths.length && soundPaths[soundIndex] != null) {
             try {
-                AudioInputStream ais = AudioSystem.getAudioInputStream(soundFiles[soundIndex]);
+                java.io.InputStream is = getClass().getResourceAsStream(soundPaths[soundIndex]);
+                if (is == null) return;
+                java.io.BufferedInputStream bis = new java.io.BufferedInputStream(is);
+                AudioInputStream ais = AudioSystem.getAudioInputStream(bis);
                 Clip enemyClip = AudioSystem.getClip();
                 enemyClip.open(ais);
                 enemyClip.start();

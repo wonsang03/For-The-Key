@@ -2,7 +2,6 @@ package item;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +42,20 @@ public enum WeaponType {
         this.imagePath = imagePath;
     }
 
-    // ✅ Enum 초기화 시 커서 프레임 로드
+    // ✅ Enum 초기화 시 커서 프레임 및 무기 이미지 로드
     static {
+        // 먼저 공용 itemSheet를 미리 로드
+        try {
+            java.io.InputStream is = WeaponType.class.getResourceAsStream("/res/item/items.png");
+            if (is != null) itemSheet = ImageIO.read(is);
+        } catch (Exception e) {
+            itemSheet = null;
+        }
+
+        // 그 다음 각 무기별 커서 프레임과 이미지 로드
         for (WeaponType wt : values()) {
             wt.loadCursorFrames();
+            wt.loadWeaponImageInternal(); // 모든 무기 이미지를 미리 로드하여 런타임 프리징 방지
         }
     }
 
@@ -87,27 +96,42 @@ public enum WeaponType {
     // ======================================================================
     // 이미지 및 커서 로드
     // ======================================================================
-    public BufferedImage getWeaponImage() {
-        if (image != null) return image;
+
+    // Static 초기화 전용 - 실제 이미지 로드 수행
+    private void loadWeaponImageInternal() {
+        if (image != null) return;
+
         try {
+            // 개별 파일이 있는 무기들 (PISTOL, SHOTGUN, SNIPER, DAGGER)
             if (imagePath != null) {
-                image = ImageIO.read(new File(imagePath));
-                return image;
+                // imagePath is stored as a project-relative resource path like "res/item/pistol1.png".
+                // Resources are packaged inside the JAR under "/res/...", so do NOT strip "res/" here.
+                java.io.InputStream is = getClass().getResourceAsStream("/" + imagePath);
+                if (is != null) {
+                    image = ImageIO.read(is);
+                }
+                return;
             }
 
-            if (itemSheet == null)
-                itemSheet = ImageIO.read(new File("res/item/items.png"));
+            // items.png 스프라이트 시트를 사용하는 무기들 (LONG_SWORD, KNIGHT_SWORD)
+            if (itemSheet == null) {
+                return;
+            }
 
             int spriteX = 0, spriteY = 0, spriteW = 29, spriteH = 29;
             switch (this) {
                 case LONG_SWORD -> { spriteX = 702; spriteY = 1507; }
                 case KNIGHT_SWORD -> { spriteX = 1025; spriteY = 1474; }
-                default -> { return null; }
+                default -> { return; }
             }
             image = itemSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
-        } catch (IOException e) {
+        } catch (Exception e) {
             image = null;
         }
+    }
+
+    // Public getter - 단순히 캐시된 이미지만 반환 (런타임 I/O 없음)
+    public BufferedImage getWeaponImage() {
         return image;
     }
 
@@ -140,10 +164,10 @@ public enum WeaponType {
         if (maxFrames == 0) return;
 
         for (int i = 1; i <= maxFrames; i++) {
-            String path = String.format("res/item/%s%d.png", baseName, i);
+            String path = String.format("/res/item/%s%d.png", baseName, i);
             try {
-                File f = new File(path);
-                if (f.exists()) cursorFrames.add(ImageIO.read(f));
+                java.io.InputStream is = getClass().getResourceAsStream(path);
+                if (is != null) cursorFrames.add(ImageIO.read(is));
             } catch (IOException e) {
                 // 커서 프레임 로드 실패 시 조용히 처리
             }

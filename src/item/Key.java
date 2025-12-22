@@ -2,8 +2,6 @@ package item;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Key {
@@ -13,21 +11,21 @@ public class Key {
     private static BufferedImage spriteSheet;
     private BufferedImage image;
 
+    // Static 초기화로 한 번만 로드
+    static {
+        try {
+            java.io.InputStream is = Key.class.getResourceAsStream("/res/item/items.png");
+            if (is != null) spriteSheet = ImageIO.read(is);
+        } catch (Exception e) {
+            spriteSheet = null;
+        }
+    }
+
     // [김선욱님 코드] 열쇠 생성자
     public Key(double x, double y) {
         this.x = x;
         this.y = y;
-        loadSpriteSheet();
         setSpriteRegion();
-    }
-
-    private static void loadSpriteSheet() {
-        if (spriteSheet != null) return;
-        try {
-        	spriteSheet = ImageIO.read(new File("res/item/items.png"));
-        } catch (IOException | IllegalArgumentException e) {
-            spriteSheet = null;
-        }
     }
 
     // [김선욱님 코드] 스프라이트 좌표 직접 지정

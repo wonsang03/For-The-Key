@@ -141,8 +141,9 @@ public class Boss {
     
     public void loadProjectileSprite(String fileName, int x, int y, int width, int height) {
         try {
-            File imageFile = new File("res/" + fileName);
-            BufferedImage sheet = ImageIO.read(imageFile);
+            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            if (is == null) return;
+            BufferedImage sheet = ImageIO.read(is);
             if (sheet == null || x + width > sheet.getWidth() || y + height > sheet.getHeight() || x < 0 || y < 0) {
                 return;
             }
@@ -155,8 +156,9 @@ public class Boss {
     private void loadAnimationFromPoints(String fileName, int[] xCoords, int[] yCoords,
                                          int[] widths, int[] heights, int state) throws IOException {
         try {
-            File imageFile = new File("res/" + fileName);
-            BufferedImage sheet = ImageIO.read(imageFile);
+            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            if (is == null) return;
+            BufferedImage sheet = ImageIO.read(is);
             if (sheet == null) {
                 return;
             }
@@ -233,8 +235,9 @@ public class Boss {
     
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state, boolean... useBlackRemoval) throws IOException {
         try {
-            File imageFile = new File("res/" + fileName);
-            BufferedImage sheet = ImageIO.read(imageFile);
+            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            if (is == null) return;
+            BufferedImage sheet = ImageIO.read(is);
             if (sheet == null) {
                 return;
             }
