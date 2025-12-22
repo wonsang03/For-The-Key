@@ -94,14 +94,15 @@ public class Player extends Entity {
     
     public void getPlayerImage() {
         try {
-            java.io.File file = new java.io.File("res/player.png");
-            
-            if (!file.exists()) {
+            // JAR 내부 리소스 읽기 (클래스패스 기준)
+            java.io.InputStream is = getClass().getResourceAsStream("/res/player.png");
+
+            if (is == null) {
                 animations = new BufferedImage[3][totalFrames];
                 return;
             }
-            
-            BufferedImage spriteSheet = ImageIO.read(file);
+
+            BufferedImage spriteSheet = ImageIO.read(is);
             
             if (spriteSheet == null) {
                 animations = new BufferedImage[3][totalFrames];
@@ -137,7 +138,7 @@ public class Player extends Entity {
                 obtainingItem = false;
                 obtainCounter = 0;
             }
-            return; // 아래의 이동 코드를 실행하지 않고 여기서 끝냄
+	        return; // 획득 연출 동안은 잠깐 멈춤(기존 연출 유지)
         }
         
         // 아이템 충돌 체크는 GamePanel.checkItemPickups()에서 처리
@@ -520,6 +521,11 @@ public class Player extends Entity {
     
     // [민정 추가] 상자가 열릴 때 호출할 함수
     public void playObtainEffect(BufferedImage itemImage) {
+        // 이미지가 없으면 연출을 시작하지 않음 ("멈추는데 아무것도 안 뜸" 방지)
+        if (itemImage == null) {
+            return;
+        }
+
         this.obtainingItem = true;
         this.obtainedImage = itemImage;
         this.obtainCounter = 0;

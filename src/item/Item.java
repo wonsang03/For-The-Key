@@ -2,8 +2,6 @@ package item;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Item {
@@ -23,14 +21,22 @@ public class Item {
     // [김선욱님 코드] 🔹 현재 장착 무기 교체 여부
     private boolean replaceCurrentWeapon = false;
 
+    // Static 초기화로 한 번만 로드
+    static {
+        try {
+            java.io.InputStream is = Item.class.getResourceAsStream("/res/item/items.png");
+            if (is != null) spriteSheet = ImageIO.read(is);
+        } catch (Exception e) {
+            spriteSheet = null;
+        }
+    }
+
     // [김선욱님 코드] 아이템 생성자
     public Item(double x, double y, ItemType type) {
         this.x = x;
         this.y = y;
         this.type = type;
 
-        loadSpriteSheet();
-        
         setupSpriteRegion(type);
     }
 
@@ -41,18 +47,15 @@ public class Item {
         this.weaponPickup = true;
         this.weaponType = weaponType;
 
-        // Weapon 이미지 로드
+        // WeaponType의 이미지는 static 초기화에서 이미 로드됨
+        // 단순히 참조만 하므로 I/O 없음
         if (weaponType != null) {
-            this.weaponImage = weaponType.getWeaponImage();
-        }
-    }
-
-    private static void loadSpriteSheet() {
-        if (spriteSheet != null) return;
-        try {
-            spriteSheet = ImageIO.read(new File("res/item/items.png"));
-        } catch (IOException e) {
-            // 이미지 로드 실패 시 조용히 처리
+            try {
+                this.weaponImage = weaponType.getWeaponImage();
+            } catch (Exception e) {
+                // 이미지 로드 실패 시 null로 유지
+                this.weaponImage = null;
+            }
         }
     }
 
@@ -219,8 +222,7 @@ public class Item {
     // [민정 추가] UI에서 아이템 이미지를 가져가기 위한 정적 메서드
     // -------------------------------------------------------------
     public static BufferedImage getIconImage(ItemType type) {
-        loadSpriteSheet(); // 이미지가 로드 안 됐으면 로드
-
+        // spriteSheet는 static 초기화에서 이미 로드됨
         int sx = 0, sy = 0;
         int sw = 32, sh = 32;
 
@@ -237,19 +239,30 @@ public class Item {
                 return null;
         }
 
-        // 이미지 잘라서 반환
-        if (spriteSheet != null) {
+        // 이미지 잘라서 반환 (안전 가드: 좌표/크기 오류로 게임 루프가 죽는 것 방지)
+        if (spriteSheet == null) return null;
+        if (sw <= 0 || sh <= 0) return null;
+        if (sx < 0 || sy < 0) return null;
+        if (sx + sw > spriteSheet.getWidth() || sy + sh > spriteSheet.getHeight()) return null;
+        try {
             return spriteSheet.getSubimage(sx, sy, sw, sh);
+        } catch (Exception e) {
+            return null;
         }
-        return null;
     }
     
     // [민정 추가] 현재 아이템 객체의 이미지를 잘라서 반환하는 함수
     public BufferedImage getItemImage() {
-        if (spriteSheet == null) {
-            loadSpriteSheet();
+        // spriteSheet는 static 초기화에서 이미 로드됨
+        if (spriteSheet == null) return null;
+        if (spriteW <= 0 || spriteH <= 0) return null;
+        if (spriteX < 0 || spriteY < 0) return null;
+        if (spriteX + spriteW > spriteSheet.getWidth() || spriteY + spriteH > spriteSheet.getHeight()) return null;
+        try {
+            return spriteSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
+        } catch (Exception e) {
+            return null;
         }
-        return spriteSheet.getSubimage(spriteX, spriteY, spriteW, spriteH);
     }
 
     // [추가] 획득 애니메이션에 사용할 이미지 (무기면 무기 이미지, 아니면 아이템 시트)

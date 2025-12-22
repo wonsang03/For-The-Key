@@ -255,27 +255,27 @@ public class Enemy {
     private void loadImage() {
         try {
             if (type == EnemyType.SLIME) {
-                loadPattern("Slime1.png", 20, 317, 30, 20, 80, 2, IDLE, false);
-                loadPattern("Slime2.png", 20, 317, 30, 20, 80, 7, MOVE, false); 
-                loadPattern("Slime3.png", 20, 317, 50, 20, 80, 12, ATTACK, false);
+                loadPattern("slime1.png", 20, 317, 30, 20, 80, 2, IDLE, false);
+                loadPattern("slime2.png", 20, 317, 30, 20, 80, 7, MOVE, false);
+                loadPattern("slime3.png", 20, 317, 50, 20, 80, 12, ATTACK, false);
                 isAnimated = true;
             }
             else if (type == EnemyType.GOBLIN) {
-                loadPattern("Goblin.png", 10, 70, 40, 58, 70, 1, IDLE);
-                loadPattern("Goblin.png", 140, 70, 40, 58, 65, 5, MOVE);
-                loadPattern("Goblin.png", 400, 70, 40, 58, 65, 5, ATTACK);
+                loadPattern("goblin.png", 10, 70, 40, 58, 70, 1, IDLE);
+                loadPattern("goblin.png", 140, 70, 40, 58, 65, 5, MOVE);
+                loadPattern("goblin.png", 400, 70, 40, 58, 65, 5, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.MAGMA_SLIME_BIG) {
-                loadPattern("Slime1.png", 20, 102, 30, 20, 80, 2, IDLE, false);
-                loadPattern("Slime2.png", 20, 102, 30, 20, 80, 7, MOVE, false); 
-                loadPattern("Slime3.png", 20, 102, 50, 20, 80, 12, ATTACK, false);
+                loadPattern("slime1.png", 20, 102, 30, 20, 80, 2, IDLE, false);
+                loadPattern("slime2.png", 20, 102, 30, 20, 80, 7, MOVE, false);
+                loadPattern("slime3.png", 20, 102, 50, 20, 80, 12, ATTACK, false);
                 isAnimated = true;
             }
             else if (type == EnemyType.MAGMA_SLIME_SMALL) {
-                loadPattern("Slime1.png", 20, 102, 30, 20, 80, 2, IDLE, false);
-                loadPattern("Slime2.png", 20, 102, 30, 20, 80, 7, MOVE, false); 
-                loadPattern("Slime3.png", 20, 102, 50, 20, 80, 12, ATTACK, false);
+                loadPattern("slime1.png", 20, 102, 30, 20, 80, 2, IDLE, false);
+                loadPattern("slime2.png", 20, 102, 30, 20, 80, 7, MOVE, false);
+                loadPattern("slime3.png", 20, 102, 50, 20, 80, 12, ATTACK, false);
                 isAnimated = true;
             }
             else if (type == EnemyType.WOLF) {
@@ -320,9 +320,9 @@ public class Enemy {
                 isAnimated = true;
             }
             else if (type == EnemyType.YETI) {
-                loadPattern("Yeti.png", 5, 0, 60, 55, 64, 5, IDLE);
-                loadPattern("Yeti.png", 10, 70, 60, 55, 64, 7, MOVE);
-                loadPattern("Yeti.png", 10, 140, 60, 53, 64, 5, ATTACK);
+                loadPattern("yeti.png", 5, 0, 60, 55, 64, 5, IDLE);
+                loadPattern("yeti.png", 10, 70, 60, 55, 64, 7, MOVE);
+                loadPattern("yeti.png", 10, 140, 60, 53, 64, 5, ATTACK);
                 isAnimated = true;
             }
             else if (type == EnemyType.SNOW_MAGE) {
@@ -368,8 +368,9 @@ public class Enemy {
     // [서상원님 코드] 스프라이트 시트에서 애니메이션 프레임 추출
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state, boolean... useBlackRemoval) throws IOException {
         try {
-            File imageFile = new File("res/" + fileName);
-            BufferedImage sheet = ImageIO.read(imageFile);
+            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            if (is == null) return;
+            BufferedImage sheet = ImageIO.read(is);
             if (sheet == null) {
                 return;
             }

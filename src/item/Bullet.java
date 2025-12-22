@@ -41,7 +41,9 @@ public class Bullet {
     private static void loadSpriteSheet() {
         if (spriteSheet != null) return;
         try {
-            spriteSheet = ImageIO.read(new File("res/item/items.png"));
+            java.io.InputStream is = Bullet.class.getResourceAsStream("/res/item/items.png");
+            if (is != null) spriteSheet = ImageIO.read(is);
+            else spriteSheet = null;
         } catch (IOException | IllegalArgumentException e) {
             spriteSheet = null;
         }

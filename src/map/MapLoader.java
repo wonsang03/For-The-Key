@@ -28,18 +28,15 @@ public class MapLoader {
         TileSprites.loadSprites(stageNumber);
 
         try {
-            // 파일 시스템에서 직접 읽기
-            java.io.File file = new java.io.File("src/map/data/stage" + stageNumber + ".txt");
-            if (!file.exists()) {
-                // bin 폴더에서도 시도
-                file = new java.io.File("bin/map/data/stage" + stageNumber + ".txt");
-            }
-            if (!file.exists()) {
+            // JAR 내부 리소스 읽기 (클래스패스 기준)
+            String resourcePath = "/map/data/stage" + stageNumber + ".txt";
+            java.io.InputStream is = MapLoader.class.getResourceAsStream(resourcePath);
+
+            if (is == null) {
                 return;
             }
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    new FileInputStream(file), "UTF-8"))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"))) {
                 String line;
                 Integer currentRoomId = null;
                 String currentRoomType = "NORMAL";

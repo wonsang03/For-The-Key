@@ -2,27 +2,30 @@ package item;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import javax.imageio.ImageIO;
 import common.Constants;
 
 public class Box {
     public int x, y;
     public boolean opened = false;
-    private BufferedImage closedImg, openedImg;
+    private static BufferedImage closedImg, openedImg;
+
+    // Static 초기화로 한 번만 로드
+    static {
+        try {
+            java.io.InputStream is1 = Box.class.getResourceAsStream("/res/item/box_closed.png");
+            java.io.InputStream is2 = Box.class.getResourceAsStream("/res/item/box_open.png");
+            if (is1 != null) closedImg = ImageIO.read(is1);
+            if (is2 != null) openedImg = ImageIO.read(is2);
+        } catch (Exception e) {
+            closedImg = null;
+            openedImg = null;
+        }
+    }
 
     public Box(int x, int y) {
         this.x = x;
         this.y = y;
-        loadImages();
-    }
-
-    private void loadImages() {
-        try {
-            closedImg = ImageIO.read(new File("res/item/box_closed.png"));
-            openedImg = ImageIO.read(new File("res/item/box_open.png"));
-        } catch (Exception e) {
-        }
     }
 
     public void draw(Graphics2D g2, double cameraX, double cameraY) {

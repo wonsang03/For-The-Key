@@ -58,19 +58,19 @@ public class TileSprites {
         try {
             currentStage = stageNumber;
 
-            // 스테이지별 이미지 파일 경로
-            String imagePath;
+            // 스테이지별 이미지 파일 경로 (클래스패스 기준)
+            String resourcePath;
             if (stageNumber >= 1 && stageNumber <= 4) {
-                imagePath = "src/map/assets/stage" + stageNumber + ".png";
+                resourcePath = "/map/assets/stage" + stageNumber + ".png";
             } else {
                 // stage5는 이미지가 없으므로 stage1 재사용
-                imagePath = "src/map/assets/stage1.png";
+                resourcePath = "/map/assets/stage1.png";
             }
 
-            spriteSheet = ImageIO.read(new File(imagePath));
+            spriteSheet = ImageIO.read(TileSprites.class.getResourceAsStream(resourcePath));
 
             // KeyRoom.png 스프라이트 시트 로드 (EXIT 문용)
-            keyRoomSheet = ImageIO.read(new File("src/map/assets/keyRoom.png"));
+            keyRoomSheet = ImageIO.read(TileSprites.class.getResourceAsStream("/map/assets/keyRoom.png"));
 
             // 모서리 타일
             cornerTopLeft = getTileByIndex(0);
