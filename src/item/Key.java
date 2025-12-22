@@ -14,7 +14,7 @@ public class Key {
     // Static 초기화로 한 번만 로드
     static {
         try {
-            java.io.InputStream is = Key.class.getResourceAsStream("/res/item/items.png");
+            java.io.InputStream is = Key.class.getResourceAsStream("/item/item/items.png");
             if (is != null) spriteSheet = ImageIO.read(is);
         } catch (Exception e) {
             spriteSheet = null;

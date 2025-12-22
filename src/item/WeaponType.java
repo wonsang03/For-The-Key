@@ -8,10 +8,10 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 public enum WeaponType {
-    PISTOL("Pistol", 10, 0.4, 600, true,"res/item/pistol1.png"),
-    SHOTGUN("Shotgun", 5, 1.2, 350,true, "res/item/shotgun1.png"),
-    SNIPER("Sniper", 60, 2.0, 1200,true, "res/item/sniper1.png"),
-    DAGGER("Dagger", 5, 0.15, 80,false, "res/item/dagger1.png"),
+    PISTOL("Pistol", 10, 0.4, 600, true,"item/item/pistol1.png"),
+    SHOTGUN("Shotgun", 5, 1.2, 350,true, "item/item/shotgun1.png"),
+    SNIPER("Sniper", 60, 2.0, 1200,true, "item/item/sniper1.png"),
+    DAGGER("Dagger", 5, 0.15, 80,false, "item/item/dagger1.png"),
     LONG_SWORD("Long Sword", 15, 0.5, 150, false, null),
     KNIGHT_SWORD("Knight Sword", 45, 1.5, 210, false, null);
 
@@ -46,7 +46,7 @@ public enum WeaponType {
     static {
         // 먼저 공용 itemSheet를 미리 로드
         try {
-            java.io.InputStream is = WeaponType.class.getResourceAsStream("/res/item/items.png");
+            java.io.InputStream is = WeaponType.class.getResourceAsStream("/item/item/items.png");
             if (is != null) itemSheet = ImageIO.read(is);
         } catch (Exception e) {
             itemSheet = null;
@@ -104,8 +104,8 @@ public enum WeaponType {
         try {
             // 개별 파일이 있는 무기들 (PISTOL, SHOTGUN, SNIPER, DAGGER)
             if (imagePath != null) {
-                // imagePath is stored as a project-relative resource path like "res/item/pistol1.png".
-                // Resources are packaged inside the JAR under "/res/...", so do NOT strip "res/" here.
+                // imagePath는 프로젝트 상대 경로로 저장됨 (예: "item/item/pistol1.png")
+                // JAR 내부에서는 "/item/item/..." 경로로 패키징되므로 "item/item/"를 제거하지 않음
                 java.io.InputStream is = getClass().getResourceAsStream("/" + imagePath);
                 if (is != null) {
                     image = ImageIO.read(is);
@@ -130,7 +130,7 @@ public enum WeaponType {
         }
     }
 
-    // Public getter - 단순히 캐시된 이미지만 반환 (런타임 I/O 없음)
+    // 캐시된 이미지만 반환 (런타임 I/O 없음)
     public BufferedImage getWeaponImage() {
         return image;
     }
@@ -164,7 +164,7 @@ public enum WeaponType {
         if (maxFrames == 0) return;
 
         for (int i = 1; i <= maxFrames; i++) {
-            String path = String.format("/res/item/%s%d.png", baseName, i);
+            String path = String.format("/item/item/%s%d.png", baseName, i);
             try {
                 java.io.InputStream is = getClass().getResourceAsStream(path);
                 if (is != null) cursorFrames.add(ImageIO.read(is));

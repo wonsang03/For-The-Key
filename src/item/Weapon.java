@@ -17,25 +17,25 @@ public class Weapon {
 
     public Weapon(WeaponType type) {
         this.type = type;
-        // WeaponType already preloads all images in static initializer
-        // Just reference the cached image from WeaponType
+        // WeaponType의 static 초기화에서 이미 모든 이미지를 미리 로드함
+        // WeaponType에서 캐시된 이미지를 참조만 하면 됨
         this.weaponImage = type.getWeaponImage();
     }
 
     // [seonuk 추가] 🎞️ 애니메이션 시작 (마우스 클릭 시 호출)
-    // Delegates to WeaponType
+    // WeaponType에 위임
     public void playCursorAnimation() {
         type.playCursorAnimation();
     }
 
     // [seonuk 추가] 🖱️ 마우스 커서로 그리기
-    // Delegates to WeaponType
+    // WeaponType에 위임
     public void drawCursor(Graphics2D g, int mouseX, int mouseY, boolean isAttacking) {
         type.drawCursor(g, mouseX, mouseY, isAttacking);
     }
 
     // [seonuk 추가] 애니메이션 상태 확인
-    // Delegates to WeaponType
+    // WeaponType에 위임
     public boolean isAnimating() {
         return type.isAnimating();
     }

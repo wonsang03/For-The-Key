@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
@@ -45,8 +44,6 @@ public class Boss {
     private int lastAttackPattern = -1;
     
     private int patternTimer = 0;
-    private final int DASH_PATTERN_INTERVAL = 90;
-    private final int PROJECTILE_PATTERN_INTERVAL = 300;
     private int timeSinceLastProjectile = 0;
     
     private boolean flip = false; 
@@ -141,7 +138,7 @@ public class Boss {
     
     public void loadProjectileSprite(String fileName, int x, int y, int width, int height) {
         try {
-            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            java.io.InputStream is = getClass().getResourceAsStream("/enemy/enemy/" + fileName);
             if (is == null) return;
             BufferedImage sheet = ImageIO.read(is);
             if (sheet == null || x + width > sheet.getWidth() || y + height > sheet.getHeight() || x < 0 || y < 0) {
@@ -156,7 +153,7 @@ public class Boss {
     private void loadAnimationFromPoints(String fileName, int[] xCoords, int[] yCoords,
                                          int[] widths, int[] heights, int state) throws IOException {
         try {
-            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            java.io.InputStream is = getClass().getResourceAsStream("/enemy/enemy/" + fileName);
             if (is == null) return;
             BufferedImage sheet = ImageIO.read(is);
             if (sheet == null) {
@@ -235,7 +232,7 @@ public class Boss {
     
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state, boolean... useBlackRemoval) throws IOException {
         try {
-            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            java.io.InputStream is = getClass().getResourceAsStream("/enemy/enemy/" + fileName);
             if (is == null) return;
             BufferedImage sheet = ImageIO.read(is);
             if (sheet == null) {
@@ -819,22 +816,6 @@ public class Boss {
                 startAngle,
                 arcAngle
             );
-        }
-        
-        // 돌진 중일 때 돌진 거리 표시 (빨간색 네모)
-        if (isDashingAngle && totalDashDistance > 0) {
-            double endX = pos.centerX + dashDirectionX * totalDashDistance;
-            double endY = pos.centerY + dashDirectionY * totalDashDistance;
-            int endScreenX = (int)endX - cameraX;
-            int endScreenY = (int)endY - cameraY;
-            
-            // 돌진 목표 지점을 빨간색 네모로 표시
-            int rectSize = 30;
-            g2.setColor(new Color(255, 0, 0, 200)); // 반투명 빨간색
-            g2.fillRect(endScreenX - rectSize / 2, endScreenY - rectSize / 2, rectSize, rectSize);
-            g2.setColor(Color.RED);
-            g2.setStroke(new BasicStroke(3.0f));
-            g2.drawRect(endScreenX - rectSize / 2, endScreenY - rectSize / 2, rectSize, rectSize);
         }
     }
 

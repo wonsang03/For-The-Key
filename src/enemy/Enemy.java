@@ -368,7 +368,7 @@ public class Enemy {
     // [서상원님 코드] 스프라이트 시트에서 애니메이션 프레임 추출
     private void loadPattern(String fileName, int startX, int startY, int w, int h, int stride, int count, int state, boolean... useBlackRemoval) throws IOException {
         try {
-            java.io.InputStream is = getClass().getResourceAsStream("/res/" + fileName);
+            java.io.InputStream is = getClass().getResourceAsStream("/enemy/enemy/" + fileName);
             if (is == null) return;
             BufferedImage sheet = ImageIO.read(is);
             if (sheet == null) {

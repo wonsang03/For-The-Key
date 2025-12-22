@@ -52,7 +52,7 @@ public class Player extends Entity {
     private int hp = 100;
     private double attackMultiplier = 1.0;
     private double attackSpeedBonus = 0.0;
-    private double baseSpeed = 4.0;
+    private double baseSpeed = 10.0;
     
     // [김민정님 코드] 발걸음 소리 타이머 변수
     int footstepCounter = 0; 
@@ -95,7 +95,7 @@ public class Player extends Entity {
     public void getPlayerImage() {
         try {
             // JAR 내부 리소스 읽기 (클래스패스 기준)
-            java.io.InputStream is = getClass().getResourceAsStream("/res/player.png");
+            java.io.InputStream is = getClass().getResourceAsStream("/player/player.png");
 
             if (is == null) {
                 animations = new BufferedImage[3][totalFrames];
@@ -432,7 +432,6 @@ public class Player extends Entity {
             if (currentKeyCount >= needed) {
 
                 gp.soundManager.playSE(14); // 철컥 소리
-                gp.soundManager.playSE(11); // 클리어 소리
 
                 gp.nextStage(); // 다음 스테이지로 이동
 

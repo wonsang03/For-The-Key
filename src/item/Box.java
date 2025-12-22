@@ -13,8 +13,8 @@ public class Box {
     // Static 초기화로 한 번만 로드
     static {
         try {
-            java.io.InputStream is1 = Box.class.getResourceAsStream("/res/item/box_closed.png");
-            java.io.InputStream is2 = Box.class.getResourceAsStream("/res/item/box_open.png");
+            java.io.InputStream is1 = Box.class.getResourceAsStream("/item/item/box_closed.png");
+            java.io.InputStream is2 = Box.class.getResourceAsStream("/item/item/box_open.png");
             if (is1 != null) closedImg = ImageIO.read(is1);
             if (is2 != null) openedImg = ImageIO.read(is2);
         } catch (Exception e) {
